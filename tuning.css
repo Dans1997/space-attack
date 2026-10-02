@@ -1,0 +1,132 @@
+.tuning-dialog {
+  width: min(620px, calc(100vw - var(--space-md, 20px) * 2));
+  max-height: min(84vh, 760px);
+  padding: var(--space-lg, 32px);
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 8px);
+  font: inherit;
+}
+
+.tuning-dialog::backdrop {
+  background: rgb(0 0 0 / 72%);
+}
+
+.tuning-dialog h2 {
+  margin: 0 0 var(--space-xs, 8px);
+  color: var(--accent);
+}
+
+.tuning-intro {
+  margin: 0 0 var(--space-md, 20px);
+  color: var(--muted);
+}
+
+.tuning-progression {
+  margin: calc(var(--space-xs, 8px) * -1) 0 var(--space-md, 20px);
+  padding-left: var(--space-sm, 12px);
+  color: var(--muted);
+  border-left: 2px solid var(--accent);
+  font-size: var(--font-sm, 13px);
+}
+
+.tuning-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-md, 20px);
+}
+
+.tuning-field,
+.tuning-ship-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-xs, 8px);
+  min-width: 0;
+}
+
+.tuning-field label,
+.tuning-ship-control label {
+  grid-column: 1 / -1;
+  color: var(--text);
+  font-size: var(--font-sm, 13px);
+  font-weight: 600;
+}
+
+.tuning-dialog input,
+.tuning-dialog select {
+  width: 100%;
+  min-width: 0;
+  min-height: var(--control-height, 44px);
+  padding: var(--space-xs, 8px) var(--space-sm, 12px);
+  color: var(--text);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 8px);
+  font: inherit;
+}
+
+.tuning-dialog button {
+  min-height: var(--control-height, 44px);
+  padding: var(--space-xs, 8px) var(--space-md, 20px);
+  color: var(--ink);
+  background: var(--accent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius, 8px);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tuning-dialog .tuning-reset {
+  color: var(--text);
+  background: var(--background);
+}
+
+.tuning-dialog :focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.tuning-unit {
+  color: var(--muted);
+  font-size: var(--font-sm, 13px);
+}
+
+.tuning-preview {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: 76px;
+  height: 56px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.tuning-status {
+  grid-column: 1 / -1;
+  min-height: 1.25em;
+  margin: 0;
+  color: var(--muted);
+}
+
+.tuning-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-sm, 12px);
+}
+
+@media (max-width: 520px) {
+  .tuning-dialog {
+    padding: var(--space-md, 20px);
+  }
+
+  .tuning-form {
+    grid-template-columns: 1fr;
+  }
+
+  .tuning-actions {
+    flex-direction: column-reverse;
+  }
+}
