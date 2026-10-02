@@ -1,0 +1,39 @@
+# Asset credits
+
+All art and audio in this directory are released under CC0 1.0. Attribution is not required; credits are included here for provenance. Audio WAV sources were converted to Ogg Vorbis with the installed FFmpeg runtime (libvorbis quality 3); no other edits were made.
+
+| Included file | Use | Creator / source | License and changes | Bytes |
+|---|---|---|---|---|
+| `assets/KENNEY-LICENSE.txt` | License notice shipped with the Kenney graphics pack | Kenney Vleugels (Kenney.nl), [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied as supplied | 511 |
+| `assets/images/player-ship.png` | Player ship sprite (`playerShip1_blue.png`) | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; renamed only | 2698 |
+| `assets/images/enemy-scout.png` | Scout enemy sprite (`enemyBlack1.png`) | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; renamed only | 3019 |
+| `assets/images/enemy-interceptor.png` | Interceptor enemy sprite (`enemyBlack2.png`) | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; renamed only | 2990 |
+| `assets/images/enemy-heavy.png` | Heavy enemy sprite (`enemyBlack3.png`) | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; renamed only | 3548 |
+| `assets/images/player-laser.png` | Player projectile (`laserBlue01.png`) | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; renamed only | 744 |
+| `assets/images/enemy-laser.png` | Enemy projectile (`laserRed01.png`) | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; renamed only | 735 |
+| `assets/images/space-background.png` | Space backdrop (`Backgrounds/blue.png`) | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; renamed only | 2760 |
+| `assets/images/fire00.png` | Fire animation frame 1 for ship thrust and hit effects | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied unchanged | 345 |
+| `assets/images/fire01.png` | Fire animation frame 2 for ship thrust and hit effects | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied unchanged | 593 |
+| `assets/images/fire02.png` | Fire animation frame 3 for ship thrust and hit effects | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied unchanged | 597 |
+| `assets/images/fire03.png` | Fire animation frame 4 for ship thrust and hit effects | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied unchanged | 582 |
+| `assets/images/fire04.png` | Fire animation frame 5 for ship thrust and hit effects | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied unchanged | 677 |
+| `assets/images/fire05.png` | Fire animation frame 6 for ship thrust and hit effects | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied unchanged | 784 |
+| `assets/images/fire06.png` | Fire animation frame 7 for ship thrust and hit effects | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied unchanged | 629 |
+| `assets/images/fire07.png` | Fire animation frame 8 for ship thrust and hit effects | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied unchanged | 734 |
+| `assets/images/fire08.png` | Fire animation frame 9 for ship thrust and hit effects | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied unchanged | 378 |
+| `assets/images/fire09.png` | Fire animation frame 10 for ship thrust and hit effects | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied unchanged | 387 |
+| `assets/images/fire10.png` | Fire animation frame 11 for ship thrust and hit effects | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied unchanged | 347 |
+| `assets/images/fire11.png` | Fire animation frame 12 for ship thrust and hit effects | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied unchanged | 611 |
+| `assets/images/fire12.png` | Fire animation frame 13 for ship thrust and hit effects | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied unchanged | 587 |
+| `assets/images/fire13.png` | Fire animation frame 14 for ship thrust and hit effects | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied unchanged | 588 |
+| `assets/images/fire14.png` | Fire animation frame 15 for ship thrust and hit effects | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied unchanged | 684 |
+| `assets/images/fire15.png` | Fire animation frame 16 for ship thrust and hit effects | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied unchanged | 780 |
+| `assets/images/fire16.png` | Fire animation frame 17 for ship thrust and hit effects | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied unchanged | 641 |
+| `assets/images/fire17.png` | Fire animation frame 18 for ship thrust and hit effects | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied unchanged | 739 |
+| `assets/images/fire18.png` | Fire animation frame 19 for ship thrust and hit effects | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied unchanged | 381 |
+| `assets/images/fire19.png` | Fire animation frame 20 for ship thrust and hit effects | Kenney Vleugels, [Space Shooter Redux](https://lpc.opengameart.org/content/space-shooter-redux) | CC0 1.0; copied unchanged | 386 |
+| `assets/audio/explosion.ogg` | Enemy destruction sound (`Explosions/Medium Length/sfx_exp_medium1.wav`) | Juhani Junkala / SubspaceAudio, [512 Sound Effects (8-bit style)](https://opengameart.org/content/512-sound-effects-8-bit-style) | CC0 1.0; converted from WAV to Ogg Vorbis with FFmpeg libvorbis quality 3 | 19258 |
+| `assets/audio/title.ogg` | Title screen music (`Title Screen.wav`) | Juhani Junkala / SubspaceAudio, [5 Chiptunes (Action)](https://opengameart.org/content/5-chiptunes-action) | CC0 1.0; converted from WAV to Ogg Vorbis with FFmpeg libvorbis quality 3 | 180466 |
+| `assets/audio/level-1.ogg` | Gameplay music (`Level 1.wav`) | Juhani Junkala / SubspaceAudio, [5 Chiptunes (Action)](https://opengameart.org/content/5-chiptunes-action) | CC0 1.0; converted from WAV to Ogg Vorbis with FFmpeg libvorbis quality 3 | 1146756 |
+
+License references: [Creative Commons CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/). The OpenGameArt pages identify the above packs as CC0. Exact total size of all files under `assets/`: **1,374,935 bytes** (1.31 MiB), below the 5,000,000-byte limit.
