@@ -2,7 +2,11 @@
 
 ## Phase boundary
 
-This baseline contains planning documents and selected, credited assets only. No game code is implemented. Commit the baseline on `main`, then stop for user review. All future code is written with Codex only. No new dependencies are needed or approved.
+The planning/asset baseline was committed on `main` and reviewed. The user approved implementation on a feature branch, split among three Codex agents with exclusive file ownership, then integration, passing repository npm tests, commits and a local server URL. All code is written with Codex only. No new dependencies are needed or approved. Executed checks and remaining limits are recorded in VALIDATION.md.
+
+User additions: P pauses, M mutes, T opens tuning with a visible shortcut. The native tuning dialog pauses combat and offers bounded numeric settings, themes, player/enemy sprite pickers, localStorage persistence and Reset defaults. Closing leaves gameplay paused for explicit resume. `src/settings.js`, `src/tuning.js`, `tuning.css`, and tests for settings/audio were added to the layout below. `src/validation.js` validates configuration and `tools/server.js` provides dependency-free local HTTP serving.
+
+Latest combat override: direct enemy contact ends the run immediately, regardless of hull, reserves or protection. Enemies clamp to the last row (`arena.enemyFloorY`) and linger, replacing the earlier escape/return-to-formation rules in the original design sections below. Music uses decoded Web Audio looping for continuous playback of the loop-ready title track.
 
 ## Reference and direction
 
@@ -129,22 +133,22 @@ Baseline review gates:
 - [x] Originals downloaded outside repo; only selected files copied; audio converted with ffmpeg; entire assets folder <5,000,000 bytes.
 - [x] Every asset and license notice is inventoried and credited with file, use, author, source, license and alterations; fetch failures are explicitly reported.
 - [x] Planning/asset validation through NPM passes before the requested main commit.
-- [ ] Commit on main, verify clean Git status and stop for user review (final delivery gate).
+- [x] Commit on main, verify clean Git status and stop for user review (baseline delivery gate, completed before approved implementation).
 
 Future game acceptance gates (unchecked until actually run):
 
 - [ ] Runs over local HTTP in current Chrome/Edge and Firefox with native ES modules and no runtime dependencies or console errors.
-- [ ] Title screen shows Space Attack, readable keyboard instructions, Start and credits; keyboard-only activation works.
-- [ ] Left/right arrows and A/D move/clamp the spaceship; held Space fires at the configured rate; instructions stay on screen and match remapped bindings.
-- [ ] Enemy waves spawn, move, attack and clear correctly; each kill raises visible score exactly once.
-- [ ] Player bullets hit enemies; enemy bullets/contact hit the player; fast bullets cannot tunnel; simultaneous hits cannot double-consume a shot or kill score.
-- [ ] Health and remaining ships are visible; damage, invulnerability, death and respawn behave as specified; zero ships enters game over.
-- [ ] Later waves demonstrably increase pressure; counts and rates respect caps; seeded tests verify waves 1, 3 and 10 and multiple cycles.
-- [ ] Start, game over and Restart work; restart resets score, health, ships, wave, entities, timers, keys and effects; no duplicate listeners or loops after ten restarts.
-- [ ] Pause/blur stops combat; resume causes no time jump, stuck key or surprise shot; UI remains keyboard usable.
-- [ ] Title and Level 1 music and explosion sounds use the credited OGG files, begin only after a gesture, obey volumes/mute and do not accumulate across screens/restarts; blocked audio still permits gameplay.
-- [ ] Assets, tunables, bindings, labels and visual tokens can be changed in config alone; invalid references report useful errors.
-- [ ] Layout remains usable at desktop and narrow viewport sizes, HUD stays legible, focus is visible, and reduced-motion mode removes shake.
+- [x] Title screen shows Space Attack, readable keyboard instructions, Start and credits; keyboard-only activation works.
+- [x] Left/right arrows and A/D move/clamp the spaceship; held Space fires at the configured rate; instructions stay on screen and derive from bindings. Unit tests and browser key presses cover these paths.
+- [x] Enemy waves spawn, move, attack and clear correctly; each kill raises visible score exactly once. Browser score reached 000100; wave clearance is also unit-tested.
+- [x] Player bullets hit enemies; enemy bullets hit the player; fast bullets cannot tunnel; simultaneous hits cannot double-consume a shot or kill score. Contact follows the latest immediate-game-over override.
+- [x] Health and remaining ships are visible; bullet damage, invulnerability, death and respawn behave as specified; zero ships enters game over. Full-hull/invulnerable direct contact is also terminal.
+- [x] Later waves demonstrably increase pressure; counts and rates respect caps; seeded tests verify waves 1, 3 and 10 and multiple cycles.
+- [x] Start, game over and Restart work in browser; restart resets score, health, ships, wave, entities, timers, keys and effects. Ten fresh-run state resets and loop lifecycle are unit-tested; listeners/loop are initialized once.
+- [x] P pause and tuning stop combat; blur/visibility pause and clear input; loop reset tests cover time jumps, and browser resume/keyboard checks pass.
+- [x] Title and Level 1 music and explosion sounds use credited OGG files, unlock on gesture and obey volumes/mute. Web Audio decoded-buffer loops and lifecycle tests pass; blocked playback uses silent-mode notice. Browser playback reports no audio errors; subjective loop quality remains for listening review.
+- [x] Assets, tunables, bindings, labels and visual tokens can be changed in config alone; invalid references report useful errors. Selected tuning values/themes/ships persist and reset in browser.
+- [x] Layout remains usable at desktop and 390px viewport width, HUD stays legible, focus is visible, and reduced-motion mode removes decorative motion/flashing. No shake is implemented.
 - [ ] A five-minute run on the review machine has bounded entities/effects and smooth play; record browser, hardware and observations rather than claiming an unmeasured performance target.
-- [ ] Repository npm test passes meaningful config, state, movement, collision, progression and asset/license/budget checks before every implementation commit.
-- [ ] Final assets remain under 5 MB; every shipped file is used and credited; only Codex authored code; reviewable branch/PR and clear commits follow project rules.
+- [x] Repository npm test passes meaningful config, state, movement, collision, progression, settings/audio and asset/license/budget checks. Re-run before every implementation commit.
+- [x] Assets remain under 5 MB; every runtime file is in the manifest and used by rendering/audio; only Codex authored code. Work is on feature/space-attack in focused commits; no push or PR was requested.

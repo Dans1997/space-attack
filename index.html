@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10151d">
+  <meta name="description" content="Space Attack: a keyboard arcade shooter with endless enemy waves and flight tuning.">
+  <title>Space Attack</title>
+  <link rel="icon" href="assets/images/player-ship.png" type="image/png">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="tuning.css">
+  <script type="module" src="src/main.js"></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="masthead">
+      <div class="identity"><img src="assets/images/player-ship.png" alt="" width="32" height="28"><div><h1 id="brand"></h1><p id="edition"></p></div></div>
+      <div class="toolbar"><button id="pause-button" type="button"></button><button id="mute-button" type="button" aria-pressed="false"></button><button id="tuning-button" type="button" aria-haspopup="dialog"></button></div>
+    </header>
+    <section class="arcade" aria-label="Arcade game">
+      <div class="hud" aria-label="Flight status">
+        <div class="stat"><span id="score-label"></span><strong id="score">000000</strong></div>
+        <div class="stat"><span id="wave-label"></span><strong id="wave">01</strong></div>
+        <div class="stat"><span id="ships-label"></span><strong id="ships">3</strong></div>
+        <div class="stat hull"><span id="health-label"></span><div class="hull-value"><meter id="health" min="0" max="100" value="100"></meter><strong id="health-value">100%</strong></div></div>
+      </div>
+      <div class="stage" id="stage">
+        <canvas id="game" width="800" height="600" tabindex="0"></canvas>
+        <section class="screen" id="screen" aria-labelledby="screen-title">
+          <div class="screen-content">
+            <p class="screen-kicker" id="screen-kicker"></p>
+            <h2 id="screen-title"></h2>
+            <p class="screen-body" id="screen-body"></p>
+            <dl id="results" class="results" hidden><div><dt id="final-score-label"></dt><dd id="final-score"></dd></div><div><dt id="final-wave-label"></dt><dd id="final-wave"></dd></div></dl>
+            <button type="button" class="primary" id="screen-action"></button>
+            <p class="confirm-hint" id="confirm-hint"></p>
+          </div>
+          <img class="hero-ship" id="hero-ship" src="assets/images/player-ship.png" alt="" width="160" height="124">
+        </section>
+      </div>
+      <div class="controls" id="controls"></div>
+    </section>
+    <footer class="footer"><p id="footer-copy"></p><a id="credits" href="CREDITS.md" target="_blank" rel="noopener"></a></footer>
+    <p id="notice" class="notice" role="status" aria-live="polite"></p>
+    <span class="sr-only" id="announcement" role="status" aria-live="polite"></span>
+    <noscript>Space Attack needs JavaScript enabled to fly.</noscript>
+  </main>
+</body>
+</html>
