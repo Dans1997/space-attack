@@ -4,11 +4,11 @@ Checked on 2026-10-02 in `F:\Repos\space-attack`, branch `feature/space-attack`.
 
 ## Automated checks
 
-`npm test`: **42 passed, 0 failed, 0 skipped**. Re-run before each implementation commit.
+`npm test`: **51 passed, 0 failed, 0 skipped**. Re-run before each implementation commit.
 
 Coverage: deterministic initialization; movement/held firing; swept nearest hit and single scoring; bullet health/respawn; immediate full-hull/invulnerable contact loss; formation ships stopping at the floor; missed divers exiting harmlessly; interceptor-only dives; bounded rows/high waves; monotonic capped difficulty; intermission timing; ten fresh-run resets; fixed-loop catch-up/pause; form keyboard isolation; config/asset references; localStorage validation/reset; media unlock/fallback; stale music promises; decoded-buffer looping/gain.
 
-All **33 assets total 1,384,944 bytes**. All 27 PNGs and 5 OGGs appear in the runtime manifest; the remaining file is the Kenney license. CREDITS.md inventories all files. Archives remain outside the repository.
+All **36 assets total 1,394,605 bytes**. All 29 PNGs and 6 OGGs appear in the runtime manifest; the remaining file is the Kenney license. CREDITS.md inventories all files. Archives remain outside the repository.
 
 FFmpeg inspected Title: duration **11.294127 seconds**, source metadata `Loop Ready, Free to Use Anywhere`, no silence interval with `silencedetect=noise=-40dB:d=0.04`. Music now loops an AudioBufferSourceNode over the decoded buffer, avoiding HTML media restart latency. Asset bytes were not changed. Tests verify continuous looping and source lifecycle; browser playback emitted no audio error. Subjective listening quality is for review, not an automated assertion.
 
@@ -94,3 +94,15 @@ Approved baseline external NPM harness: four passing tests before `38c0a26`. Wat
 - Music attempts startup by default; suspended context resume and blocked HTML autoplay are retryable on a user gesture. Mute/unmute were each saved and verified across browser reloads. The default remains unmuted.
 - Browser tuning contains theme, numeric values and Your ship, with no enemy picker. No new dependencies.
 - Interim integration test run: 33 passed / 4 failed (missing player-shot.ogg plus three obsolete enemy-picker settings assertions). Shot files initially landed in the review output folder; they were copied into the actual repository and obsolete assertions updated. Subsequent full suite passed.
+
+## Arcade feel validation
+
+- `npm test`: 51 passed, 0 failed/skipped. Added parallax position/speed/reduced-motion checks; bounded effect lifetimes, zero-duration hit feedback and exact point events; all new dials/defaults/pilot assets; numeric/string/color persistence; gain ramps, repeated gesture preservation, rapid reversal, retiring voices, mute/destroy and zero crossfade.
+- All JavaScript files passed `node --check`. Browser launch, initial wave strip, pause/menu fades and native tuning were exercised with no console errors. The title was observed at different vertical positions with the same desktop layout; CSS uses a smooth transform-only cycle.
+- Pilot choices show Blue/Red/Green only. Red survived reload. Native shake adjustment to 5 also survived reload; restored shake 4 and Blue afterward. Gameplay/Audio groups open by default; other advanced sections collapse. Text fields render as text inputs.
+- Desktop and 390 x 844 layouts inspected. Narrow `scrollWidth` and `clientWidth` both 390. Viewport override reset, latest title screenshot captured and preview left at title.
+- Defaults: three star layers, transient muzzle/particle feedback, a 0.1-second low-opacity hit flash and 0.16-second arena shake. Reduced motion disables travel, rapid flashes, shake and title bobbing; pure feedback checks pass. No new package or external font.
+- Added one distinct CC0 pilot damage sound and matching red/green Kenney pilot sprites. Every file is credited; full asset total remains 1,394,605 bytes.
+- Crossfades use decoded Web Audio sources and gain automation. The HTML audio fallback remains available but switches music without overlapping fades. Subjective sound balance/seam quality and a measured long gameplay performance run remain review items; the new transient effects were tested for timing/bounds rather than claiming a hardware benchmark.
+- An interim run had 46/48 passing tests: the previous immediate-stop audio assertion and enemy-shaped pilot assertion failed. They were updated to the new fade/pilot behavior; the final suite is green.
+- UI guidance: the user's explicit bobbing-title/retro-cabinet request supersedes the skills' default against endless motion/scanline gradients. DESIGN.md now records the motion purpose and ENERGY 3 / RHYTHM 1 / MOTION 3. Square controls, native semantics, visible focus, actual HUD values, grouped settings and responsive checks remain; the existing approved HTML/CSS/module stack takes precedence over framework preferences.

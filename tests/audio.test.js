@@ -119,7 +119,9 @@ test('Web Audio loops the decoded title buffer and volume changes update its gai
   globalThis.fetch = async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(4) });
   delete globalThis.Audio;
   try {
-    const audio = createAudio(CONFIG);
+    const audioConfig = structuredClone(CONFIG);
+    audioConfig.audio.fadeSec = 0;
+    const audio = createAudio(audioConfig);
     await audio.unlock();
     assert.equal(sources.length, 1);
     assert.equal(sources[0].started, true);
@@ -128,7 +130,7 @@ test('Web Audio loops the decoded title buffer and volume changes update its gai
     assert.equal(sources[0].loopEnd, 11.3);
     await audio.unlock();
     assert.equal(sources.length, 1, 'repeated gesture unlock must not restart the music');
-    const changedConfig = structuredClone(CONFIG);
+    const changedConfig = structuredClone(audioConfig);
     changedConfig.audio.musicVolume = 0.5;
     audio.updateConfig(changedConfig);
     assert.equal(gains[0].gain.value, changedConfig.audio.masterVolume * changedConfig.audio.musicVolume);
@@ -136,6 +138,113 @@ test('Web Audio loops the decoded title buffer and volume changes update its gai
     assert.equal(sources[0].stopped, true);
     audio.destroy();
     assert.equal(contexts[0].state, 'closed');
+  } finally {
+    if (previousContext === undefined) delete globalThis.AudioContext;
+    else globalThis.AudioContext = previousContext;
+    globalThis.fetch = previousFetch;
+    if (previousAudio === undefined) delete globalThis.Audio;
+    else globalThis.Audio = previousAudio;
+  }
+});
+
+test('title and gameplay tracks crossfade, retire old voices, and survive interruption', async () => {
+  const sources = [];
+  const gains = [];
+  class FakeSource {
+    connect() {}
+    start() { this.started = true; }
+    stop() { this.stopped = true; }
+    disconnect() {}
+  }
+  class FakeContext {
+    constructor() { this.destination = {}; this.state = 'running'; this.currentTime = 1; }
+    resume() { return Promise.resolve(); }
+    close() { this.state = 'closed'; return Promise.resolve(); }
+    decodeAudioData(path) { return Promise.resolve({ duration: 8, path }); }
+    createBufferSource() { const source = new FakeSource(); sources.push(source); return source; }
+    createGain() {
+      const ramps = [];
+      const parameter = {
+        value: 1,
+        cancelScheduledValues() { ramps.push({ kind: 'cancel' }); },
+        setValueAtTime(value, time) { parameter.value = value; ramps.push({ kind: 'set', value, time }); },
+        linearRampToValueAtTime(value, time) { ramps.push({ kind: 'ramp', value, time }); },
+      };
+      const gain = { gain: parameter, ramps, connect() {}, disconnect() {} };
+      gains.push(gain);
+      return gain;
+    }
+  }
+  const previousContext = globalThis.AudioContext;
+  const previousFetch = globalThis.fetch;
+  const previousAudio = globalThis.Audio;
+  const config = structuredClone(CONFIG);
+  config.audio.fadeSec = 0.025;
+  globalThis.AudioContext = FakeContext;
+  globalThis.fetch = async (path) => ({ ok: true, arrayBuffer: async () => path });
+  delete globalThis.Audio;
+  try {
+    const audio = createAudio(config);
+    await audio.unlock();
+    assert.equal(sources.length, 1);
+    audio.setScreen('playing');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(sources.length, 2);
+    assert.ok(gains[0].ramps.some((ramp) => ramp.kind === 'ramp' && ramp.value === 0), 'title gain ramps down');
+    assert.ok(gains[1].ramps.some((ramp) => ramp.kind === 'ramp' && ramp.value === config.audio.masterVolume * config.audio.musicVolume), 'gameplay gain ramps up');
+    const rampCount = gains[1].ramps.length;
+    await audio.unlock();
+    assert.equal(gains[1].ramps.length, rampCount, 'repeated unlock leaves the crossfade envelope intact');
+
+    audio.setScreen('title');
+    assert.equal(sources.length, 2, 'returning to the outgoing title voice does not create a third voice');
+    await new Promise((resolve) => setTimeout(resolve, 45));
+    assert.equal(sources[0].stopped, undefined, 'the revived title voice survives its canceled retirement');
+    assert.equal(sources[1].stopped, true, 'the interrupted gameplay voice retires');
+
+    audio.setScreen('gameOver');
+    assert.ok(gains[0].ramps.some((ramp) => ramp.kind === 'ramp' && ramp.value === 0), 'game over fades the active title track to silence');
+    await new Promise((resolve) => setTimeout(resolve, 45));
+    assert.equal(sources[0].stopped, true);
+    audio.destroy();
+  } finally {
+    if (previousContext === undefined) delete globalThis.AudioContext;
+    else globalThis.AudioContext = previousContext;
+    globalThis.fetch = previousFetch;
+    if (previousAudio === undefined) delete globalThis.Audio;
+    else globalThis.Audio = previousAudio;
+  }
+});
+
+test('zero-duration crossfades switch immediately and pause stops the current track', async () => {
+  const sources = [];
+  class FakeContext {
+    constructor() { this.destination = {}; this.state = 'running'; this.currentTime = 0; }
+    resume() { return Promise.resolve(); }
+    close() { this.state = 'closed'; return Promise.resolve(); }
+    decodeAudioData() { return Promise.resolve({ duration: 8 }); }
+    createBufferSource() { const source = { connect() {}, start() {}, stop() { this.stopped = true; }, disconnect() {} }; sources.push(source); return source; }
+    createGain() { return { gain: { value: 1, cancelScheduledValues() {}, setValueAtTime(value) { this.value = value; } }, connect() {}, disconnect() {} }; }
+  }
+  const previousContext = globalThis.AudioContext;
+  const previousFetch = globalThis.fetch;
+  const previousAudio = globalThis.Audio;
+  const config = structuredClone(CONFIG);
+  config.audio.fadeSec = 0;
+  globalThis.AudioContext = FakeContext;
+  globalThis.fetch = async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(4) });
+  delete globalThis.Audio;
+  try {
+    const audio = createAudio(config);
+    await audio.unlock();
+    audio.setScreen('playing');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(sources.length, 2);
+    assert.equal(sources[0].stopped, true);
+    assert.equal(sources[1].stopped, undefined);
+    audio.setScreen('paused');
+    assert.equal(sources[1].stopped, true);
+    audio.destroy();
   } finally {
     if (previousContext === undefined) delete globalThis.AudioContext;
     else globalThis.AudioContext = previousContext;
@@ -331,6 +440,8 @@ test('shot events play their configured assets at the effects volume and mute bl
     const shots = instances.filter((instance) => instance.src === CONFIG.assets.sounds.playerShot.path || instance.src === CONFIG.assets.sounds.enemyShot.path);
     assert.deepEqual(shots.map((instance) => instance.src), [CONFIG.assets.sounds.playerShot.path, CONFIG.assets.sounds.enemyShot.path]);
     assert.ok(shots.every((instance) => instance.volume === CONFIG.audio.masterVolume * CONFIG.audio.sfxVolume));
+    audio.handleEvents(['playerHit', 'playerDestroyed']);
+    assert.equal(instances.filter((instance) => instance.src === CONFIG.assets.sounds.playerHit.path).length, 1, 'fatal hit and destroy events share one impact sound');
     audio.setMuted(true);
     const countAfterMute = instances.length;
     audio.handleEvents(['playerFired', 'enemyFired']);

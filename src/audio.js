@@ -6,7 +6,9 @@ export function createAudio(config, onStatus = () => {}) {
   let destroyed = false;
   let unavailableReported = false;
   let track = null;
-  let trackGeneration = 0;
+  let outgoingTrack = null;
+  let pendingTrack = null;
+  let retirementTimer = null;
   let audioContext = null;
   const decodedTracks = new Map();
   const effects = [];
@@ -21,30 +23,77 @@ export function createAudio(config, onStatus = () => {}) {
     return Math.max(0, Math.min(1, currentConfig.audio.masterVolume * currentConfig.audio[`${kind}Volume`]));
   }
 
-  function trackPath() {
-    return track?.path ?? null;
+  function fadeDuration() {
+    return Number.isFinite(currentConfig.audio.fadeSec) ? Math.max(0, currentConfig.audio.fadeSec) : 0;
   }
 
-  function syncVolumes() {
-    if (track?.gain) track.gain.gain.value = muted ? 0 : volume('music');
-    if (track?.audio) track.audio.volume = muted ? 0 : volume('music');
-    for (const effect of effects) effect.volume = muted ? 0 : volume('sfx');
+  function setGain(voice, target, seconds = 0) {
+    if (!voice?.gain) {
+      if (voice?.audio) voice.audio.volume = target;
+      return;
+    }
+    const parameter = voice.gain.gain;
+    const now = audioContext?.currentTime ?? 0;
+    if (parameter.cancelAndHoldAtTime) parameter.cancelAndHoldAtTime(now);
+    else {
+      parameter.cancelScheduledValues?.(now);
+      parameter.setValueAtTime?.(parameter.value, now);
+    }
+    if (seconds <= 0) {
+      if (parameter.setValueAtTime) parameter.setValueAtTime(target, now);
+      else parameter.value = target;
+      voice.fadeEndTime = now;
+      return;
+    }
+    if (parameter.linearRampToValueAtTime) parameter.linearRampToValueAtTime(target, now + seconds);
+    else parameter.value = target;
+    voice.fadeEndTime = now + seconds;
   }
 
-  function stopTrack() {
-    const priorTrack = track;
+  function retargetGain(voice, target) {
+    const now = audioContext?.currentTime ?? 0;
+    const remaining = voice?.fadeEndTime > now ? voice.fadeEndTime - now : 0;
+    setGain(voice, target, remaining);
+  }
+
+  function stopVoice(voice) {
+    if (!voice) return;
+    if (voice.source) {
+      try { voice.source.stop(); } catch { /* The source may already be stopped. */ }
+      voice.source.disconnect?.();
+      voice.gain?.disconnect?.();
+    }
+    if (voice.audio) {
+      voice.audio.pause();
+      try { voice.audio.currentTime = 0; } catch { /* Some media implementations reject seeking before metadata. */ }
+    }
+  }
+
+  function cancelRetirement() {
+    if (retirementTimer !== null) globalThis.clearTimeout(retirementTimer);
+    retirementTimer = null;
+  }
+
+  function discardOutgoing() {
+    cancelRetirement();
+    stopVoice(outgoingTrack);
+    outgoingTrack = null;
+  }
+
+  function cancelPending() {
+    const pending = pendingTrack;
+    pendingTrack = null;
+    stopVoice(pending?.voice);
+  }
+
+  function stopTracks() {
+    const pending = pendingTrack;
+    pendingTrack = null;
+    cancelRetirement();
+    const voices = new Set([track, outgoingTrack, pending?.voice]);
     track = null;
-    trackGeneration += 1;
-    if (!priorTrack) return;
-    if (priorTrack.source) {
-      try { priorTrack.source.stop(); } catch { /* A source may have stopped while a screen changed. */ }
-      priorTrack.source.disconnect?.();
-      priorTrack.gain?.disconnect?.();
-    }
-    if (priorTrack.audio) {
-      priorTrack.audio.pause();
-      try { priorTrack.audio.currentTime = 0; } catch { /* Some media implementations reject seeking before metadata. */ }
-    }
+    outgoingTrack = null;
+    for (const voice of voices) stopVoice(voice);
   }
 
   function stopEffects() {
@@ -75,13 +124,19 @@ export function createAudio(config, onStatus = () => {}) {
     return decoded;
   }
 
-  async function startWebAudio(candidate, generation, definition, context) {
-    const resume = context.resume();
-    await resume;
+  function stillWanted(candidate) {
+    if (pendingTrack !== candidate || destroyed || muted) return false;
+    const musicId = currentConfig.audio.tracksByScreen[screen];
+    return currentConfig.assets.music[musicId]?.path === candidate.path;
+  }
+
+  async function makeWebAudioVoice(candidate, definition, context) {
+    await context.resume();
     const buffer = await loadTrack(definition.path, context);
-    if (track !== candidate || trackGeneration !== generation || destroyed || muted) return;
+    if (!stillWanted(candidate)) return null;
     const source = context.createBufferSource();
     const gain = context.createGain();
+    const voice = { path: definition.path, source, gain, kind: 'buffer', fadeEndTime: 0 };
     source.buffer = buffer;
     source.loop = definition.loop !== false;
     if (source.loop) {
@@ -92,68 +147,146 @@ export function createAudio(config, onStatus = () => {}) {
         ? loopEnd
         : buffer.duration;
     }
-    gain.gain.value = muted ? 0 : volume('music');
+    gain.gain.value = 0;
     source.connect(gain);
     gain.connect(context.destination);
-    candidate.source = source;
-    candidate.gain = gain;
+    candidate.voice = voice;
     source.start();
+    return voice;
   }
 
-  async function startHtmlAudio(candidate, generation, definition) {
+  async function makeHtmlVoice(candidate, definition) {
     const AudioConstructor = globalThis.Audio;
     if (!AudioConstructor) throw new Error('Audio is unavailable');
     const audio = new AudioConstructor(definition.path);
-    if (track !== candidate || trackGeneration !== generation || destroyed || muted) return;
-    candidate.audio = audio;
+    if (!stillWanted(candidate)) return null;
+    const voice = { path: definition.path, audio, kind: 'html' };
+    candidate.voice = voice;
     audio.loop = definition.loop !== false;
-    audio.volume = volume('music');
+    audio.volume = muted ? 0 : volume('music');
     await audio.play();
+    return voice;
+  }
+
+  function retireAfterFade(voice, seconds) {
+    if (!voice) return;
+    outgoingTrack = voice;
+    if (!voice.gain || seconds <= 0) {
+      discardOutgoing();
+      return;
+    }
+    setGain(voice, 0, seconds);
+    retirementTimer = globalThis.setTimeout(() => {
+      if (outgoingTrack !== voice) return;
+      stopVoice(voice);
+      outgoingTrack = null;
+      retirementTimer = null;
+    }, seconds * 1000);
+  }
+
+  function crossfadeTo(voice) {
+    const seconds = fadeDuration();
+    const previous = track;
+    if (outgoingTrack && outgoingTrack !== voice) discardOutgoing();
+    track = voice;
+    if (voice.gain) setGain(voice, muted ? 0 : volume('music'), seconds);
+    if (previous && previous !== voice) {
+      if (previous.gain && voice.gain && seconds > 0) retireAfterFade(previous, seconds);
+      else stopVoice(previous);
+    } else if (outgoingTrack && outgoingTrack !== voice) {
+      discardOutgoing();
+    }
+  }
+
+  function fadeOutCurrent() {
+    cancelPending();
+    if (!track) return;
+    if (outgoingTrack) discardOutgoing();
+    const prior = track;
+    track = null;
+    if (prior.gain && fadeDuration() > 0) retireAfterFade(prior, fadeDuration());
+    else stopVoice(prior);
+  }
+
+  async function prepareVoice(candidate, definition) {
+    let voice = null;
+    let firstError = null;
+    const context = getAudioContext();
+    if (context) {
+      try {
+        voice = await makeWebAudioVoice(candidate, definition, context);
+      } catch (error) {
+        firstError = error;
+        stopVoice(candidate.voice);
+      }
+    }
+    if (!voice && stillWanted(candidate)) {
+      try {
+        voice = await makeHtmlVoice(candidate, definition);
+      } catch (error) {
+        firstError ??= error;
+        stopVoice(candidate.voice);
+        if (pendingTrack === candidate) pendingTrack = null;
+        if (error?.name !== 'AbortError' && error?.name !== 'NotAllowedError') reportUnavailable();
+        return;
+      }
+    }
+    if (!voice) {
+      if (pendingTrack === candidate) {
+        pendingTrack = null;
+        if (firstError && firstError.name !== 'AbortError' && firstError.name !== 'NotAllowedError') reportUnavailable();
+      }
+      return;
+    }
+    if (!stillWanted(candidate)) {
+      stopVoice(voice);
+      return;
+    }
+    pendingTrack = null;
+    if (!track && outgoingTrack?.path === voice.path) {
+      cancelRetirement();
+      const prior = outgoingTrack;
+      outgoingTrack = null;
+      stopVoice(voice);
+      track = prior;
+      setGain(prior, volume('music'), fadeDuration());
+      return;
+    }
+    crossfadeTo(voice);
   }
 
   async function playTrackForScreen() {
     const musicId = currentConfig.audio.tracksByScreen[screen];
     const definition = musicId && currentConfig.assets.music[musicId];
-    if (!definition || muted || !unlocked || destroyed) {
-      stopTrack();
+    if (!definition || !unlocked || destroyed) {
+      fadeOutCurrent();
+      return;
+    }
+    if (muted) {
+      stopTracks();
       return;
     }
     if (track?.path === definition.path) {
-      syncVolumes();
+      if (pendingTrack) cancelPending();
       return;
     }
-    stopTrack();
-    const generation = trackGeneration;
-    const candidate = { path: definition.path };
-    track = candidate;
-    try {
-      const context = getAudioContext();
-      if (context) {
-        await startWebAudio(candidate, generation, definition, context);
-      } else {
-        await startHtmlAudio(candidate, generation, definition);
-      }
-    } catch (error) {
-      if (track !== candidate || trackGeneration !== generation || destroyed || muted) return;
-      const retryable = error?.name === 'AbortError' || error?.name === 'NotAllowedError';
-      if (error?.name === 'AbortError') {
-        stopTrack();
-        return;
-      }
-      if (candidate.source || candidate.gain || candidate.audio) {
-        stopTrack();
-        if (!retryable) reportUnavailable();
-        return;
-      }
-      try {
-        await startHtmlAudio(candidate, generation, definition);
-      } catch (fallbackError) {
-        if (track === candidate && trackGeneration === generation) {
-          stopTrack();
-          if (fallbackError?.name !== 'AbortError' && fallbackError?.name !== 'NotAllowedError') reportUnavailable();
-        }
-      }
+    if (outgoingTrack?.path === definition.path) {
+      if (pendingTrack) cancelPending();
+      cancelRetirement();
+      const returning = outgoingTrack;
+      const previous = track;
+      outgoingTrack = null;
+      track = returning;
+      setGain(returning, volume('music'), fadeDuration());
+      if (previous && previous !== returning) retireAfterFade(previous, fadeDuration());
+      return;
     }
+    if (pendingTrack?.path === definition.path) return;
+    if (pendingTrack) cancelPending();
+    if (outgoingTrack) discardOutgoing();
+    const candidate = { path: definition.path };
+    pendingTrack = candidate;
+    await prepareVoice(candidate, definition);
   }
 
   async function unlock() {
@@ -175,28 +308,29 @@ export function createAudio(config, onStatus = () => {}) {
   function setMuted(value) {
     muted = Boolean(value);
     if (muted) {
-      stopTrack();
+      stopTracks();
       stopEffects();
     } else {
       void playTrackForScreen();
     }
-    syncVolumes();
   }
 
   function handleEvents(events = []) {
     if (!unlocked || muted || destroyed) return;
     const soundByEvent = currentConfig.audio.events;
+    const playedSounds = new Set();
     for (const event of events) {
       const name = typeof event === 'string' ? event : event?.type ?? event?.id;
       const soundId = soundByEvent[name] ?? (currentConfig.assets.sounds[name] ? name : null);
       const definition = soundId && currentConfig.assets.sounds[soundId];
-      if (!definition) continue;
+      if (!definition || playedSounds.has(soundId)) continue;
       effects.splice(0, effects.length, ...effects.filter((effect) => !effect.paused && !effect.ended));
       if (effects.length >= currentConfig.audio.maxConcurrentEffects) continue;
       try {
         const AudioConstructor = globalThis.Audio;
         if (!AudioConstructor) throw new Error('Audio is unavailable');
         const effect = new AudioConstructor(definition.path);
+        playedSounds.add(soundId);
         effect.volume = volume('sfx');
         effects.push(effect);
         effect.addEventListener?.('ended', () => {
@@ -211,24 +345,29 @@ export function createAudio(config, onStatus = () => {}) {
   }
 
   function updateConfig(nextConfig) {
-    const priorPath = trackPath();
-    const priorMuted = muted;
+    const previousMute = muted;
     currentConfig = nextConfig;
     muted = Boolean(nextConfig.audio.startMuted);
-    syncVolumes();
-    const nextId = currentConfig.audio.tracksByScreen[screen];
-    const nextPath = nextId && currentConfig.assets.music[nextId]?.path;
-    if (muted !== priorMuted && muted) {
-      stopTrack();
+    if (muted && !previousMute) {
+      stopTracks();
       stopEffects();
-    } else if ((priorPath && priorPath !== nextPath) || muted !== priorMuted) {
-      void playTrackForScreen();
+      return;
     }
+    if (!muted && previousMute) {
+      void playTrackForScreen();
+      return;
+    }
+    if (track?.gain) retargetGain(track, volume('music'));
+    if (track?.audio) track.audio.volume = volume('music');
+    for (const effect of effects) effect.volume = volume('sfx');
+    const musicId = currentConfig.audio.tracksByScreen[screen];
+    const desiredPath = musicId && currentConfig.assets.music[musicId]?.path;
+    if (track && track.path !== desiredPath) void playTrackForScreen();
   }
 
   function destroy() {
     destroyed = true;
-    stopTrack();
+    stopTracks();
     stopEffects();
     if (audioContext && audioContext.state !== 'closed') {
       Promise.resolve(audioContext.close()).catch(() => {});

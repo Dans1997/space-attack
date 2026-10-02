@@ -163,3 +163,24 @@ Latest playtest acceptance:
 - [x] Enemy picker removed, including old saved overrides; class sprites remain fixed.
 - [x] Only the interceptor class dives; renderer keeps the same sprite and orientation.
 - [x] Missed divers pass below the arena without escape loss; formations still stop at the last row. Simulation exit/type/contact tests pass.
+
+## Arcade feel pass
+
+Presentation is independent of physics. `starfield.js` caches normalized positions for three data-defined layers; `effect-renderer.js` draws transient particles, muzzle flashes, points and wave strips. `effects.js` consumes firing/damage/kill/wave events and owns bounded lifetimes plus short flash/shake state. Collision events include the exact awarded points and player-centered damage positions. `loop.js` passes clamped frame time to presentation; the game-over screen allows effects to finish, pause freezes them and hidden pages stop rendering.
+
+New config shapes: `visuals.starLayers: [{count,speedPxSec,radiusPx,alpha,parallax}]`; numeric `visuals` values control thruster flicker/rate, muzzle duration/size/opacity, particles/spread/core flash, hit flash/shake, point popup lifetime/travel/font/outline, wave strip lifetime/font/height/opacity, screen fade/opacity, title bob distance/period and arcade scanline/shadow/type values. Each has a bounded tuning field. Descriptors support `{path,label,min,max,step,unit,group}` or `{path,label,type:'text',group}`. Stored field values can be numbers or strings. Theme and real pilot sprite selectors remain available. Enemy pilot choices, including stale stored selections, are rejected.
+
+Music uses `audio.fadeSec` for incoming/outgoing gain ramps; mute cancels active/pending voices and ramps. Player damage uses the new credited OGG instead of enemy explosion audio. Pilot images are matching blue/red/green variants. Reduced motion suppresses decorative travel, flashes and shake and leaves readable static feedback. Numeric zero disables optional effects where the tuning bounds permit it.
+
+Arcade acceptance:
+
+- [x] Three configurable parallax layers scroll at distinct speeds and follow lateral pilot position; reduced-motion stars remain static.
+- [x] Thruster flicker and short muzzle flashes use tuning values and actual firing events.
+- [x] Particle kills, player-centered flash/shake and exact score popups have bounded lifetimes; effects finish after loss and pause freezes them.
+- [x] Wave strips mark intermission and new-wave arrivals; launch strip observed in browser and intermission transitions are tested.
+- [x] Screens fade without delaying state/input changes; title has a smooth bob and stops offscreen/reduced-motion.
+- [x] Music gain ramps crossfade title/game; interruptions, mute, retirement and zero-duration are tested.
+- [x] Retro typography, square controls, static scanlines and cabinet shadows are responsive and configurable.
+- [x] Pilot damage plays a distinct credited SFX; fatal hit/destruction events are deduplicated per sound per frame.
+- [x] Pilot picker only offers matching blue/red/green player assets; old enemy-shaped selections are rejected.
+- [x] Every new feel value has config data and a grouped tuning descriptor; persistence/reset tests pass.
