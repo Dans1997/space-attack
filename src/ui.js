@@ -6,6 +6,12 @@ export function applyTheme(config) {
   for (const [name, value] of Object.entries(theme)) if (name !== 'label') root.style.setProperty(`--${name}`, value);
   for (const [name, value] of Object.entries(config.visuals.css)) root.style.setProperty(`--${name}`, value);
   root.style.setProperty('--font', config.visuals.font);
+  for (const [name, value] of Object.entries({
+    'title-bob': `${config.visuals.titleBobPx}px`, 'title-bob-period': `${config.visuals.titleBobSec}s`,
+    'scanline-opacity': config.visuals.scanlineOpacity, 'scanline-spacing': `${config.visuals.scanlineSpacingPx}px`,
+    'cabinet-shadow': `${config.visuals.cabinetShadowPx}px`, 'title-shadow': `${config.visuals.titleShadowPx}px`,
+    'title-weight': config.visuals.titleFontWeight, 'screen-opacity': `${config.visuals.screenOpacity * 100}%`,
+  })) root.style.setProperty(`--${name}`, value);
   document.querySelector('meta[name="theme-color"]').content = theme.background;
 }
 
@@ -13,6 +19,23 @@ export function createUi(config) {
   const element = id => document.getElementById(id);
   let lastScreen;
   let lastWave;
+  let screenFade;
+  const motion = matchMedia('(prefers-reduced-motion: reduce)');
+  function showScreen(playing) {
+    screenFade?.cancel();
+    const screen = element('screen');
+    screen.inert = playing;
+    screen.setAttribute('aria-hidden', String(playing));
+    screen.hidden = false;
+    const duration = motion.matches ? 0 : config().visuals.screenFadeSec * 1000;
+    if (!duration) { screen.hidden = playing; return; }
+    screenFade = screen.animate([{ opacity: playing ? 1 : 0 }, { opacity: playing ? 0 : 1 }], { duration, easing: 'ease-out' });
+    const animation = screenFade;
+    animation.finished.then(() => {
+      if (screenFade === animation) screen.hidden = playing;
+    }).catch(() => {});
+  }
+  motion.addEventListener('change', () => showScreen(lastScreen === 'playing'));
   function configure() {
     const c = config();
     applyTheme(c);
@@ -62,7 +85,8 @@ export function createUi(config) {
     lastScreen = session.screen;
     const playing = session.screen === 'playing';
     if (playing) element('announcement').textContent = `${c.ui.wave} ${world.waveIndex}`;
-    element('screen').hidden = playing;
+    showScreen(playing);
+    element('screen').dataset.state = session.screen;
     element('results').hidden = session.screen !== 'gameOver';
     element('menu-button').hidden = !['paused', 'gameOver'].includes(session.screen);
     element('hero-ship').hidden = !['title', 'loading'].includes(session.screen);

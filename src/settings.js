@@ -61,8 +61,8 @@ export function createSettings(baseConfig, storage) {
     if (!saved || saved.version !== tuning.version || typeof saved !== 'object') return;
     if (saved.fields && typeof saved.fields === 'object') {
       for (const [path, field] of fields) {
-        const value = Number(saved.fields[path]);
-        if (Number.isFinite(value)) setPath(config, path, normalize(value, field));
+        const value = normalize(saved.fields[path], field);
+        if (value !== undefined) setPath(config, path, value);
       }
     }
     if (themes.has(saved.theme)) theme = saved.theme;
@@ -74,7 +74,12 @@ export function createSettings(baseConfig, storage) {
   }
 
   function normalize(value, field) {
-    const bounded = Math.min(field.max, Math.max(field.min, value));
+    if (field.type === 'text') return typeof value === 'string' ? value : undefined;
+    if (field.type === 'color') return typeof value === 'string' && /^#[\da-f]{6}$/i.test(value) ? value : undefined;
+    if (field.type && field.type !== 'number') return undefined;
+    const numericValue = Number(value);
+    if (!Number.isFinite(numericValue)) return undefined;
+    const bounded = Math.min(field.max, Math.max(field.min, numericValue));
     const steps = Math.round((bounded - field.min) / field.step);
     const stepped = Math.min(field.max, field.min + steps * field.step);
     return Number(stepped.toFixed(6));
@@ -84,8 +89,8 @@ export function createSettings(baseConfig, storage) {
 
   function update(path, value) {
     if (fields.has(path)) {
-      const number = Number(value);
-      if (Number.isFinite(number)) setPath(config, path, normalize(number, fields.get(path)));
+      const normalized = normalize(value, fields.get(path));
+      if (normalized !== undefined) setPath(config, path, normalized);
     } else if (path === 'tuning.theme' && themes.has(value)) {
       theme = value;
       config.tuning.theme = value;

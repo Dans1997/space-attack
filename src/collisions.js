@@ -37,7 +37,8 @@ export function resolveCollisions(world, config) {
       shot.alive = false; target.health -= shot.damage;
       if (target.health <= 0 && target.alive) {
         target.alive = false; world.score += config.enemyTypes[target.typeId].points;
-        world.events.push({ type: 'enemyDestroyed', x: target.x, y: target.y, enemyTypeId: target.typeId });
+        world.events.push({ type: 'enemyDestroyed', x: target.x, y: target.y,
+          enemyTypeId: target.typeId, points: config.enemyTypes[target.typeId].points });
       }
     } else if (shot.faction === 'enemy' && world.player.alive && world.player.invulnerableSec <= 0 &&
       sweptIntersects(shot, world.player, config.player.hitboxInsetPx)) {
@@ -55,7 +56,7 @@ export function resolveCollisions(world, config) {
   world.projectiles = world.projectiles.filter((shot) => shot.alive && shot.y + shot.height / 2 >= 0 && shot.y - shot.height / 2 <= config.arena.height);
 }
 
-export function destroyPlayerOnContact(world, x, y, config) {
+export function destroyPlayerOnContact(world, _x, _y, config) {
   if (world.gameOver) return false;
   world.player.health = 0;
   world.player.ships = 0;
@@ -66,16 +67,16 @@ export function destroyPlayerOnContact(world, x, y, config) {
     ? world.projectiles.filter((shot) => shot.faction === 'player')
     : world.projectiles;
   world.events = world.events.filter((event) => event.type !== 'playerDestroyed');
-  world.events.push({ type: 'playerDestroyed', x, y, ships: 0, cause: 'enemyContact' });
+  world.events.push({ type: 'playerDestroyed', x: world.player.x, y: world.player.y, ships: 0, cause: 'enemyContact' });
   return true;
 }
 
 function overlap(a, b) { return a.left <= b.right && a.right >= b.left && a.top <= b.bottom && a.bottom >= b.top; }
 
-export function damagePlayer(world, damage, x, y, config) {
+export function damagePlayer(world, damage, _x, _y, config) {
   if (world.player.invulnerableSec > 0 || !world.player.alive || world.gameOver) return false;
   world.player.health = Math.max(0, world.player.health - damage);
-  world.events.push({ type: 'playerHit', x, y, damage });
+  world.events.push({ type: 'playerHit', x: world.player.x, y: world.player.y, damage });
   if (world.player.health > 0) {
     world.player.invulnerableSec = config.player.hitInvulnerableSec;
     return true;

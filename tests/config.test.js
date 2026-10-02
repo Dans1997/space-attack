@@ -40,3 +40,29 @@ test('all themes provide readable text and focus/control contrast', () => {
     assert.ok(ratio(theme.ink, theme.accent) >= 4.5, `${name} primary button`);
   }
 });
+
+test('presentation dials reference valid defaults and pilot choices cannot use enemy sprites', () => {
+  for (const field of CONFIG.tuning.fields) {
+    const value = field.path.split('.').reduce((object, key) => object?.[key], CONFIG);
+    if (field.type === 'text') assert.equal(typeof value, 'string', field.path);
+    else {
+      assert.ok(Number.isFinite(value) && value >= field.min && value <= field.max, field.path);
+      assert.ok(field.step > 0, field.path);
+    }
+  }
+  const enemies = new Set(Object.values(CONFIG.enemyTypes).map(type => type.spriteId));
+  for (const ship of CONFIG.tuning.playerShips) {
+    assert.ok(!enemies.has(ship.id), ship.id);
+    assert.ok(CONFIG.assets.images[ship.id], ship.id);
+  }
+  const dials = new Set(CONFIG.tuning.fields.map(field => field.path));
+  for (const key of ['thrusterFlicker', 'thrusterHz', 'muzzleSec', 'muzzleRadiusPx', 'muzzleAlpha', 'particleSpread',
+    'explosionFlashSec', 'hitFlashAlpha', 'shakeSec', 'shakePx', 'shakeHz', 'scorePopupSec', 'scoreRisePx', 'scoreFontPx',
+    'scoreStrokePx', 'waveBannerSec', 'waveBannerFontPx', 'waveBannerHeightPx', 'waveBannerAlpha', 'screenFadeSec',
+    'screenOpacity', 'titleBobPx', 'titleBobSec', 'scanlineOpacity', 'scanlineSpacingPx', 'cabinetShadowPx', 'titleShadowPx', 'titleFontWeight']) {
+    assert.ok(dials.has(`visuals.${key}`), key);
+  }
+  CONFIG.visuals.starLayers.forEach((layer, index) => {
+    for (const key of Object.keys(layer)) assert.ok(dials.has(`visuals.starLayers.${index}.${key}`));
+  });
+});

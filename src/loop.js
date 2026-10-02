@@ -18,7 +18,7 @@ export function createLoop({ step, render, isRunning, config, requestFrame = req
       }
       if (steps === rules.maxSteps) accumulator %= rules.stepSec;
     } else accumulator = 0;
-    render();
+    render(elapsed);
     handle = requestFrame(frame);
   }
   return {

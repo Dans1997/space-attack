@@ -25,19 +25,32 @@ test('one shot damages only its nearest target and awards a kill once', () => {
   assert.equal(world.projectiles.length, 0);
   assert.equal(world.enemies.filter((enemy) => enemy.alive).length, 1);
   assert.equal(world.score, score + config.enemyTypes[nearer.typeId].points);
+  const destroyed = world.events.filter((event) => event.type === 'enemyDestroyed');
+  assert.equal(destroyed.length, 1);
+  assert.equal(destroyed[0].points, config.enemyTypes[nearer.typeId].points);
   resolveCollisions(world, config);
   assert.equal(world.score, score + config.enemyTypes[nearer.typeId].points);
+  assert.equal(world.events.filter((event) => event.type === 'enemyDestroyed').length, 1);
 });
 
 test('damage transitions through respawn and terminal game over exactly once', () => {
   const config = cloneConfig(), world = createWorld(config);
   world.player.health = 1;
-  world.projectiles = [{ id: 500, faction: 'enemy', x: world.player.x, y: world.player.y,
-    prevX: world.player.x, prevY: world.player.y - 200, width: 7, height: 20, alive: true, damage: 35, hitboxInsetPx: 0 }];
+  const firstImpactX = world.player.x - 100;
+  world.projectiles = [{ id: 500, faction: 'enemy', x: firstImpactX, y: world.player.y,
+    prevX: world.player.x + 100, prevY: world.player.y, width: 7, height: 20, alive: true, damage: 35, hitboxInsetPx: 0 }];
   resolveCollisions(world, config);
   assert.equal(world.player.ships, config.player.ships - 1);
   assert.equal(world.phase, 'respawning');
   assert.equal(world.gameOver, false);
+  const hit = world.events.find((event) => event.type === 'playerHit');
+  assert.equal(hit.x, world.player.x);
+  assert.equal(hit.y, world.player.y);
+  assert.notEqual(hit.x, firstImpactX);
+  const destroyed = world.events.find((event) => event.type === 'playerDestroyed');
+  assert.equal(destroyed.x, world.player.x);
+  assert.equal(destroyed.y, world.player.y);
+  world.events = [];
   world.player.ships = 1; world.player.alive = true; world.player.health = 1; world.phase = 'combat';
   world.projectiles = [{ id: 501, faction: 'enemy', x: world.player.x, y: world.player.y,
     prevX: world.player.x, prevY: world.player.y - 200, width: 7, height: 20, alive: true, damage: 35, hitboxInsetPx: 0 }];
@@ -71,4 +84,17 @@ test('a fast shot still collides when its endpoint has passed beyond the arena',
   resolveCollisions(world, config);
   assert.equal(world.enemies[0].alive, false);
   assert.equal(world.score, enemyType.points);
+});
+
+test('contact destruction event is positioned at the player center', () => {
+  const config = cloneConfig(), world = createWorld(config);
+  const enemy = world.enemies[0];
+  enemy.x = world.player.x + 8;
+  enemy.y = world.player.y + 8;
+  resolveCollisions(world, config);
+  const destroyed = world.events.filter((event) => event.type === 'playerDestroyed');
+  assert.equal(destroyed.length, 1);
+  assert.equal(destroyed[0].x, world.player.x);
+  assert.equal(destroyed[0].y, world.player.y);
+  assert.notEqual(destroyed[0].x, enemy.x);
 });

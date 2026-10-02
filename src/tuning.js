@@ -19,6 +19,7 @@ export function createTuningPanel({ settings, onChange = () => {}, onOpen = () =
   const resetButton = element('button', { type: 'button', class: 'tuning-reset' }, copy.reset);
   const closeButton = element('button', { type: 'submit', class: 'tuning-close' }, copy.close);
   const fieldInputs = new Map();
+  const fieldGroups = new Map();
   let returnFocus = null;
 
   function tellParent() {
@@ -66,10 +67,10 @@ export function createTuningPanel({ settings, onChange = () => {}, onOpen = () =
     const group = element('div', { class: 'tuning-field' });
     const id = `tuning-value-${index}`;
     const label = element('label', { for: id }, field.label);
-    const input = element('input', {
-      id, name: field.path, type: 'number', min: field.min, max: field.max,
-      step: field.step, inputmode: 'decimal',
-    });
+    const type = field.type === 'color' || field.type === 'text' ? field.type : 'number';
+    const inputAttributes = { id, name: field.path, type };
+    if (type === 'number') Object.assign(inputAttributes, { min: field.min, max: field.max, step: field.step, inputmode: 'decimal' });
+    const input = element('input', inputAttributes);
     input.value = String(settings.values.fields[field.path]);
     if (field.unit) input.setAttribute('aria-label', `${field.label}, ${field.unit}`);
     input.addEventListener('change', () => {
@@ -79,8 +80,19 @@ export function createTuningPanel({ settings, onChange = () => {}, onOpen = () =
     });
     fieldInputs.set(field.path, input);
     group.append(label, input);
-    if (field.unit) group.append(element('span', { class: 'tuning-unit', 'aria-hidden': 'true' }, field.unit));
-    form.append(group);
+    if (type === 'number' && field.unit) group.append(element('span', { class: 'tuning-unit', 'aria-hidden': 'true' }, field.unit));
+    const groupName = field.group ?? (field.path.startsWith('audio.') ? 'Audio' : field.path.startsWith('visuals.') || field.path.startsWith('ui.') ? 'Presentation' : 'Gameplay');
+    let fieldsContainer = fieldGroups.get(groupName);
+    if (!fieldsContainer) {
+      const details = element('details', { class: 'tuning-group' });
+      if (groupName === 'Gameplay' || groupName === 'Audio') details.open = true;
+      details.append(element('summary', {}, groupName));
+      fieldsContainer = element('div', { class: 'tuning-group-fields' });
+      details.append(fieldsContainer);
+      fieldGroups.set(groupName, fieldsContainer);
+      form.append(details);
+    }
+    fieldsContainer.append(group);
   }
 
   const themeGroup = element('div', { class: 'tuning-field tuning-theme' });

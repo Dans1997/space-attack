@@ -49,7 +49,9 @@ function confirm() {
   void audio.unlock();
   if (session.screen === 'error') { void prepare(); return; }
   if (session.screen === 'paused') session.resume();
-  else if (session.start()) effects.clear();
+  else if (session.start()) {
+    effects.clear(); effects.add([{ type: 'waveStarted', waveIndex: session.world.waveIndex }], config());
+  }
   else return;
   input.clear(); loop.resetTime(); refresh(); canvas.focus({ preventScroll: true });
 }
@@ -73,13 +75,15 @@ const loop = createLoop({
   isRunning: () => session.screen === 'playing' && !tuning.isOpen(),
   step(dt) {
     updateWorld(session.world, input.read(), dt, config());
-    effects.update(dt, config());
     effects.add(session.world.events, config());
     session.finish();
     refresh();
     audio.handleEvents(session.world.events);
   },
-  render() { renderer?.draw(session.world, session.screen); ui.update(session, audio.isMuted()); },
+  render(dt) {
+    if (['playing', 'gameOver'].includes(session.screen)) effects.update(dt);
+    renderer?.draw(session.world, session.screen, dt); ui.update(session, audio.isMuted());
+  },
 });
 
 document.getElementById('screen-action').addEventListener('click', confirm);
@@ -94,8 +98,9 @@ document.addEventListener('keydown', () => void audio.unlock());
 window.addEventListener('blur', () => { pause(); audio.setScreen('paused'); });
 window.addEventListener('focus', () => audio.setScreen(session.screen));
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) { pause(); audio.setScreen('paused'); }
-  else audio.setScreen(session.screen);
+  document.documentElement.classList.toggle('document-hidden', document.hidden);
+  if (document.hidden) { pause(); audio.setScreen('paused'); loop.stop(); }
+  else { audio.setScreen(session.screen); loop.start(); }
 });
 
 async function prepare() {
@@ -106,7 +111,7 @@ async function prepare() {
     ui.notice('');
     const assets = await loadAssets(config());
     renderer = createRenderer(canvas, assets, config, effects);
-    session.ready(); refresh(); loop.start();
+    session.ready(); refresh(); if (!document.hidden) loop.start();
     void audio.unlock();
     if (settings.persistError) ui.notice(config().tuning.text.storageError);
   } catch (error) { session.fail(error); refresh(); }
@@ -114,4 +119,5 @@ async function prepare() {
 }
 
 refresh();
+document.documentElement.classList.toggle('document-hidden', document.hidden);
 void prepare();
