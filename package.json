@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "scripts": { "test": "node --test", "start": "node tools/server.js" },
+  "scripts": { "test": "node --test", "start": "node tools/server.js", "export": "node tools/export-site.js" },
   "engines": { "node": ">=22" }
 }
