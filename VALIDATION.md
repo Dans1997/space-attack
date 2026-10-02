@@ -6,6 +6,8 @@ Checked on 2026-10-02 in `F:\Repos\space-attack`, branch `feature/space-attack`.
 
 `npm test`: **51 passed, 0 failed, 0 skipped**. Re-run before each implementation commit.
 
+The first GitHub Ubuntu run failed the credited byte-total assertion (50 passed, 1 failed): Git normalized the Kenney notice to LF while the Windows original and credits counted CRLF. `.gitattributes` now preserves the notice's original 511 bytes on every checkout. No license text was changed. Local tests pass after this correction; CI must be green before merging.
+
 Coverage: deterministic initialization; movement/held firing; swept nearest hit and single scoring; bullet health/respawn; immediate full-hull/invulnerable contact loss; formation ships stopping at the floor; missed divers exiting harmlessly; interceptor-only dives; bounded rows/high waves; monotonic capped difficulty; intermission timing; ten fresh-run resets; fixed-loop catch-up/pause; form keyboard isolation; config/asset references; localStorage validation/reset; media unlock/fallback; stale music promises; decoded-buffer looping/gain.
 
 All **36 assets total 1,394,605 bytes**. All 29 PNGs and 6 OGGs appear in the runtime manifest; the remaining file is the Kenney license. CREDITS.md inventories all files. Archives remain outside the repository.
