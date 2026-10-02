@@ -20,9 +20,10 @@
 
 ## Git and validation
 
-- Run passing NPM tests before every commit; never commit with failed tests. For this planning-only baseline, run the documented external planning/asset validation harness. Once implementation starts, provide repository `npm test` using Node's built-in test runner.
+- Run passing repository `npm test` before every commit; never commit with failed tests. Use Node's built-in test runner, without new test dependencies.
 - Use small commits with clear imperative messages. Commit only when the user asks. Do not add AI attribution, Co-Authored-By trailers or generated-with footers.
-- The user has requested this planning/asset baseline on `main`. Stop for review after committing it. No game implementation is authorized in this phase.
+- The planning/asset baseline was reviewed and approved. Implementation is authorized on `feature/space-attack`; the user requests a green test run, commit and local server URL when complete.
+- Keyboard shortcuts are P (pause), M (mute), T (tuning), Enter (start/restart) and Space (fire), with lateral movement on arrows/A/D. Display the tuning shortcut on screen. The tuning panel provides bounded values, themes, ship pickers, localStorage persistence and Reset defaults.
 - Later work uses focused feature branches from `main`, passing tests and a reviewable PR with concise behavior and validation details. Do not push, publish, create or merge a PR without appropriate user authorization.
 - Never stage temporary archives, reference video, secrets, generated caches or unused assets. Do not touch engine-generated directories.
 - Report tests that fail or checks that were skipped, including the actual output. Do not claim browser behavior works until it has been run.

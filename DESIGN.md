@@ -1,0 +1,11 @@
+# Space Attack design direction
+
+Design read: a browser arcade cabinet for keyboard players, in the approved formation-shooter visual language. ENERGY 3 / RHYTHM 1 / MOTION 3, following the requested retro arcade and game-feel pass. Screen layouts stay consistent; combat provides the purposeful movement.
+
+The page is a small arcade cabinet: the playfield is the focal point, with status above and controls below. Its dark field follows the approved reference and keeps projectiles distinct. Kenney's blue ship gives the default accent its purpose; muted fleet sprites leave blue shots readable. Phosphor and Solar are alternate cabinet palettes in the tuning panel.
+
+Use local Consolas/Courier monospace, uppercase headings, square buttons and hard offset shadows to evoke an arcade cabinet without another font asset. Tabular counters stay aligned. Solid surfaces and thin borders separate status, playfield and controls. One accent identifies launch, hull, keyboard focus, wave banners and earned points. A subtle static scanline pattern sits over the playfield; it has a specific CRT purpose and a tuning dial.
+
+Gameplay motion communicates depth through three parallax star layers, firing through flickering thrust and muzzle flashes, and damage through particles, one brief flash and a short arena-only shake. Point popups tie kills to score; wave banners mark the breathing interval. Screen overlays fade and the requested title gently bobs using compositor transforms; title motion stops offscreen. Reduced motion removes parallax travel, flame animation, muzzle/core/hit flashes, shake, popup travel, title bobbing and invulnerability blinking. Effects finish on the loss screen and freeze while paused. Music uses overlapping gain ramps between title and play. The native tuning dialog traps focus and pauses the game; closing restores focus and leaves combat paused until the player resumes.
+
+The canvas keeps fixed logical coordinates and scales proportionally. The cabinet fits typical desktop viewports; narrower screens stack toolbar controls and allow vertical scrolling, while keeping keyboard controls visible below the field. This is a keyboard game; touch movement is outside the approved scope.
