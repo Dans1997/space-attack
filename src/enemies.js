@@ -2,7 +2,7 @@ export function updateEnemies(world, dt, config) {
   const { arena, waves } = config;
   const formation = world.formation;
   const floorY = Math.min(arena.enemyFloorY, arena.height - Math.max(...Object.values(config.enemyTypes).map((type) => type.sizePx.height)) / 2);
-  const alive = world.enemies.filter((enemy) => enemy.alive && !enemy.diving && !enemy.lingering);
+  const alive = world.enemies.filter((enemy) => enemy.alive && !enemy.diving);
   if (alive.length) {
     const bounds = alive.reduce((b, e) => ({ min: Math.min(b.min, e.slotX - e.width / 2), max: Math.max(b.max, e.slotX + e.width / 2) }), { min: Infinity, max: -Infinity });
     const speed = world.difficulty.formationSpeedPxSec;
@@ -22,27 +22,9 @@ export function updateEnemies(world, dt, config) {
       enemy.y += waves.diveSpeedPxSec * world.difficulty.speedMultiplier * dt;
       enemy.x = Math.max(arena.paddingPx + enemy.width / 2,
         Math.min(arena.width - arena.paddingPx - enemy.width / 2, enemy.x));
-      if (enemy.y >= floorY) {
-        enemy.y = floorY;
-        enemy.slotY = floorY;
-        enemy.slotX = enemy.x - formation.offsetX;
-        enemy.diving = false;
-        enemy.lingering = true;
-        enemy.lingerDirection = Math.sign(Math.sin(enemy.diveElapsedSec * waves.diveSwayRate)) || formation.direction;
+      if (enemy.y - enemy.height / 2 > arena.height) {
+        enemy.alive = false;
       }
-      continue;
-    }
-    if (enemy.lingering) {
-      enemy.x += enemy.lingerDirection * world.difficulty.formationSpeedPxSec * dt;
-      const minX = arena.paddingPx + enemy.width / 2;
-      const maxX = arena.width - arena.paddingPx - enemy.width / 2;
-      if (enemy.x < minX || enemy.x > maxX) {
-        enemy.lingerDirection *= -1;
-        enemy.x = Math.max(minX, Math.min(maxX, enemy.x));
-      }
-      enemy.y = floorY;
-      enemy.slotX = enemy.x - formation.offsetX;
-      enemy.slotY = floorY;
       continue;
     }
     enemy.x = enemy.slotX + formation.offsetX;
@@ -63,11 +45,13 @@ export function fireEnemyShots(world, dt, config, random = Math.random) {
       prevX: shooter.x, prevY: shooter.y + shooter.height / 2, width: type.sizePx.width, height: type.sizePx.height,
       spriteId: type.spriteId, faction: 'enemy', damage: type.damage, lifetimeSec: type.lifetimeSec,
       speedPxSec: type.speedPxSec * world.difficulty.speedMultiplier, alive: true, hitboxInsetPx: type.hitboxInsetPx });
+    world.events.push({ type: 'enemyFired', x: shooter.x, y: shooter.y, enemyTypeId: shooter.typeId });
     formation.fireCooldownSec = world.difficulty.fireIntervalSec;
   }
   const divers = world.enemies.filter((enemy) => enemy.alive && enemy.diving).length;
-  if (formation.diveCooldownSec <= 0 && divers < world.difficulty.maxDivers && candidates.length) {
-    const diver = candidates[Math.floor(random() * candidates.length)];
+  const diveCandidates = candidates.filter((enemy) => config.enemyTypes[enemy.typeId].movementId === 'diver');
+  if (formation.diveCooldownSec <= 0 && divers < world.difficulty.maxDivers && diveCandidates.length) {
+    const diver = diveCandidates[Math.floor(random() * diveCandidates.length)];
     diver.diving = true; diver.diveElapsedSec = 0; diver.diveOriginX = diver.x;
     formation.diveCooldownSec = world.difficulty.diveIntervalSec;
   }

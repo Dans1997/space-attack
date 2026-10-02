@@ -16,15 +16,15 @@ Open http://127.0.0.1:4173. Keep the server terminal running; Ctrl+C stops it. A
 
 - Left/right arrows or A/D: move. Hold Space to fire.
 - Enter or Launch ship: start; Enter or Fly again: restart.
-- P or Escape: pause/resume. Leaving the page pauses combat.
-- M: mute/unmute.
-- T: Flight tuning. Choose speed, firing interval, dive speed, difficulty growth, music/effects volume, theme and ship sprites. All are saved in this browser's localStorage. Reset defaults restores the original values. Closing tuning leaves a running game paused; P resumes. T closes the panel when focus is outside a form field, and Escape always closes it.
+- P or Escape: pause/resume. Leaving the page pauses combat. Main menu on the pause and loss screens discards the run and returns to the title.
+- M: mute/unmute; the choice persists across reloads. Music attempts to start automatically and retries on the first click or keypress if autoplay is blocked.
+- T: Flight tuning. Choose speed, firing interval, dive speed, difficulty growth, music/effects volume, theme and your ship sprite. Enemy classes keep their own sprites. All are saved in this browser's localStorage. Reset defaults restores the original values. Closing tuning leaves a running game paused; P resumes. T closes the panel when focus is outside a form field, and Escape always closes it.
 
-The HUD shows score, wave, remaining ships including the active ship, and hull health. Enemy kills award points once. Enemy bullets deplete hull and consume reserve ships; direct enemy contact ends the run immediately, even with full hull or protection. Enemies stop at the last row and remain on screen. Exhausting the fleet also opens game over. Waves repeat with capped increasing pressure.
+The HUD shows score, wave, remaining ships including the active ship, and hull health. Enemy kills award points once. Enemy bullets deplete hull and consume reserve ships; direct enemy contact ends the run immediately, even with full hull or protection. Formation enemies stop at the last row. Only interceptors dive; missed dives exit below the screen harmlessly, keeping their original orientation. Exhausting the fleet also opens game over. Waves repeat with capped increasing pressure.
 
 ## Configure and test
 
-`src/config.js` centralizes gameplay data, assets, keyboard bindings, audio, themes, UI text and presentation tokens. Ship pickers reuse the credited sprites with unchanged hitboxes. Speed and audio changes apply immediately; derived wave pressure updates on the next wave. Reset does not restart the current run.
+`src/config.js` centralizes gameplay data, assets, keyboard bindings, audio, themes, UI text and presentation tokens. The player ship picker reuses the credited sprites with unchanged hitboxes. Speed and audio changes apply immediately; derived wave pressure updates on the next wave. Reset does not restart the current run.
 
 ```powershell
 npm test

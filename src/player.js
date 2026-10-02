@@ -15,10 +15,12 @@ export function firePlayerShot(world, firing, dt, config) {
   if (!player.alive || !firing || player.fireCooldownSec > 0) return;
   if (world.projectiles.length >= config.simulation.maxProjectiles) return;
   const type = config.projectileTypes[config.player.projectileId];
-  world.projectiles.push({ id: world.nextEntityId++, x: player.x, y: player.y - player.height / 2,
+  const shot = { id: world.nextEntityId++, x: player.x, y: player.y - player.height / 2,
     prevX: player.x, prevY: player.y - player.height / 2, width: type.sizePx.width, height: type.sizePx.height,
     spriteId: type.spriteId, faction: 'player', damage: type.damage, lifetimeSec: type.lifetimeSec,
-    speedPxSec: type.speedPxSec, alive: true, hitboxInsetPx: type.hitboxInsetPx });
+    speedPxSec: type.speedPxSec, alive: true, hitboxInsetPx: type.hitboxInsetPx };
+  world.projectiles.push(shot);
+  world.events.push({ type: 'playerFired', x: shot.x, y: shot.y, projectileId: config.player.projectileId });
   player.fireCooldownSec = config.player.fireIntervalSec;
 }
 

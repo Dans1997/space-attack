@@ -4,7 +4,7 @@ import { CONFIG } from '../src/config.js';
 import { createWorld, updateWorld } from '../src/world.js';
 import { beginWave, getWaveDifficulty } from '../src/waves.js';
 import { damagePlayer, resolveCollisions } from '../src/collisions.js';
-import { updateEnemies } from '../src/enemies.js';
+import { fireEnemyShots, updateEnemies } from '../src/enemies.js';
 
 const cloneConfig = () => structuredClone(CONFIG);
 
@@ -114,21 +114,49 @@ test('respawn waits the configured delay without decrementing it twice', () => {
   assert.equal(world.phase, 'combat');
 });
 
-test('divers stop at the enemy floor and linger laterally for ten seconds', () => {
+test('divers pass below the arena and are removed without escape damage', () => {
   const config = cloneConfig(), world = createWorld(config, () => 0.5);
-  const enemy = world.enemies[0];
-  enemy.diving = true;
-  enemy.y = config.arena.enemyFloorY - 1;
-  enemy.prevY = enemy.y;
-  const firstFloorX = enemy.x;
-  for (let i = 0; i < 100; i += 1) updateEnemies(world, config.simulation.maxFrameSec, config);
-  assert.equal(enemy.alive, true);
-  assert.equal(enemy.diving, false);
-  assert.equal(enemy.lingering, true);
-  assert.equal(enemy.y, config.arena.enemyFloorY);
-  assert.ok(enemy.x >= config.arena.paddingPx + enemy.width / 2);
-  assert.ok(enemy.x <= config.arena.width - config.arena.paddingPx - enemy.width / 2);
-  assert.notEqual(enemy.x, firstFloorX);
+  const enemyType = config.enemyTypes.diver;
+  const enemy = { id: 999, typeId: 'diver', x: 300, y: config.arena.height + enemyType.sizePx.height / 2 - 1,
+    prevX: 300, prevY: config.arena.height + enemyType.sizePx.height / 2 - 1,
+    slotX: 300, slotY: 100, width: enemyType.sizePx.width, height: enemyType.sizePx.height,
+    alive: true, diving: true, diveElapsedSec: 0, diveOriginX: 300 };
+  world.enemies = [enemy];
+  const health = world.player.health, ships = world.player.ships, score = world.score;
+  updateEnemies(world, config.simulation.maxFrameSec, config);
+  assert.ok(enemy.y > config.arena.enemyFloorY);
+  assert.equal(enemy.alive, false);
+  assert.equal(enemy.diving, true);
+  assert.equal(enemy.lingering, undefined);
+  assert.equal(world.player.health, health);
+  assert.equal(world.player.ships, ships);
+  assert.equal(world.score, score);
+});
+
+test('only enemy types configured as divers enter dive movement', () => {
+  const config = cloneConfig(), world = createWorld(config, () => 0.5);
+  world.waveIndex = 2;
+  beginWave(world, config, () => 0.5);
+  world.formation.diveCooldownSec = 0;
+  world.formation.fireCooldownSec = 100;
+  fireEnemyShots(world, 0, config, () => 0);
+  assert.ok(world.enemies.some((enemy) => enemy.diving && config.enemyTypes[enemy.typeId].movementId === 'diver'));
+  assert.ok(world.enemies.every((enemy) => !enemy.diving || config.enemyTypes[enemy.typeId].movementId === 'diver'));
+});
+
+test('enemy fire events are emitted only when a shot is spawned', () => {
+  const config = cloneConfig(), world = createWorld(config, () => 0.5);
+  world.events = [];
+  world.formation.fireCooldownSec = 0;
+  world.formation.diveCooldownSec = 100;
+  fireEnemyShots(world, 0, config, () => 0);
+  assert.equal(world.projectiles.length, 1);
+  assert.deepEqual(world.events.map((event) => event.type), ['enemyFired']);
+  world.projectiles.length = config.simulation.maxProjectiles;
+  world.events = [];
+  world.formation.fireCooldownSec = 0;
+  fireEnemyShots(world, 0, config, () => 0);
+  assert.equal(world.events.length, 0);
 });
 
 test('enemy contact causes immediate terminal game over despite hull, ships and invulnerability', () => {

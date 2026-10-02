@@ -25,6 +25,7 @@ export function createUi(config) {
     document.querySelector('link[rel="icon"]').href = c.assets.images[c.player.spriteId].path;
     element('pause-button').textContent = `${c.ui.pause} (${keyLabel(c.controls.pause[0])})`;
     element('tuning-button').textContent = `${c.ui.tuning} (${keyLabel(c.controls.tuning[0])})`;
+    element('menu-button').textContent = c.ui.mainMenu;
     element('controls').setAttribute('aria-label', c.ui.controls);
     element('controls').replaceChildren(...[
       [c.ui.moveLabel, `${c.controls.left.map(keyLabel).join(' / ')} · ${c.controls.right.map(keyLabel).join(' / ')}`],
@@ -63,6 +64,7 @@ export function createUi(config) {
     if (playing) element('announcement').textContent = `${c.ui.wave} ${world.waveIndex}`;
     element('screen').hidden = playing;
     element('results').hidden = session.screen !== 'gameOver';
+    element('menu-button').hidden = !['paused', 'gameOver'].includes(session.screen);
     element('hero-ship').hidden = !['title', 'loading'].includes(session.screen);
     const states = {
       loading: [c.ui.loading, '', null], title: [c.ui.title, c.ui.titleBody, c.ui.start],

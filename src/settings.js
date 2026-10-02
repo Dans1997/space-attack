@@ -35,11 +35,10 @@ export function createSettings(baseConfig, storage) {
   const fields = new Map(tuning.fields.map((field) => [field.path, field]));
   const themes = new Set(Object.keys(tuning.themes));
   const playerShips = new Set(tuning.playerShips.map((ship) => ship.id));
-  const enemyShips = new Set(['original', ...tuning.enemyShips.map((ship) => ship.id)]);
   let theme = tuning.defaultTheme;
   tuning.theme = theme;
   let playerShipId = config.player.spriteId;
-  let enemyShipId = null;
+  let muted = Boolean(config.audio.startMuted);
   let persistError = !storage;
 
   function save() {
@@ -50,7 +49,7 @@ export function createSettings(baseConfig, storage) {
         fields: Object.fromEntries([...fields.keys()].map((path) => [path, getPath(config, path)])),
         theme,
         playerShipId,
-        enemyShipId,
+        muted,
       }));
       persistError = false;
     } catch {
@@ -68,10 +67,10 @@ export function createSettings(baseConfig, storage) {
     }
     if (themes.has(saved.theme)) theme = saved.theme;
     if (playerShips.has(saved.playerShipId)) playerShipId = saved.playerShipId;
-    if (enemyShips.has(saved.enemyShipId)) enemyShipId = saved.enemyShipId;
+    if (typeof saved.muted === 'boolean') muted = saved.muted;
     config.player.spriteId = playerShipId;
+    config.audio.startMuted = muted;
     tuning.theme = theme;
-    tuning.enemyShipOverride = enemyShipId === 'original' || enemyShipId === null ? null : enemyShipId;
   }
 
   function normalize(value, field) {
@@ -93,9 +92,9 @@ export function createSettings(baseConfig, storage) {
     } else if (path === 'tuning.playerShip' && playerShips.has(value)) {
       playerShipId = value;
       config.player.spriteId = value;
-    } else if (path === 'tuning.enemyShip' && enemyShips.has(value)) {
-      enemyShipId = value;
-      config.tuning.enemyShipOverride = value === 'original' ? null : value;
+    } else if (path === 'audio.muted' && typeof value === 'boolean') {
+      muted = value;
+      config.audio.startMuted = value;
     } else {
       return config;
     }
@@ -110,8 +109,7 @@ export function createSettings(baseConfig, storage) {
     theme = tuning.defaultTheme;
     config.tuning.theme = theme;
     playerShipId = config.player.spriteId;
-    enemyShipId = 'original';
-    config.tuning.enemyShipOverride = null;
+    muted = Boolean(config.audio.startMuted);
     save();
     return config;
   }
@@ -126,7 +124,7 @@ export function createSettings(baseConfig, storage) {
         fields: Object.fromEntries([...fields.keys()].map((path) => [path, getPath(config, path)])),
         theme,
         playerShipId,
-        enemyShipId: enemyShipId ?? 'original',
+        muted,
       };
     },
   };

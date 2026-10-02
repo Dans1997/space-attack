@@ -33,7 +33,7 @@ export function createRenderer(canvas, assets, config, effects) {
     ctx.globalAlpha = 1;
     if (!world) return;
     for (const enemy of world.enemies) if (enemy.alive !== false) {
-      sprite(c.tuning.enemyShipOverride ?? enemy.spriteId, enemy.x, enemy.y, enemy.width, enemy.height, enemy.diving ? Math.PI : 0);
+      sprite(enemy.spriteId, enemy.x, enemy.y, enemy.width, enemy.height);
     }
     for (const shot of world.projectiles) if (shot.alive !== false) sprite(shot.spriteId, shot.x, shot.y, shot.width, shot.height);
     const p = world.player;

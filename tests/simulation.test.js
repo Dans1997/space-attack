@@ -26,6 +26,7 @@ test('horizontal movement clamps to arena edges and firing holds at configured c
   assert.equal(world.player.x, config.arena.paddingPx + world.player.width / 2);
   firePlayerShot(world, true, 0, config);
   assert.equal(world.projectiles.length, 1);
+  assert.deepEqual(world.events.map((event) => event.type), ['playerFired']);
   for (let i = 0; i < 12; i += 1) updateWorld(world, { left: false, right: false, fire: true }, config.player.fireIntervalSec / 2, config, fixedRandom);
   assert.ok(world.projectiles.length >= 2);
 });

@@ -25,9 +25,9 @@ export const CONFIG = {
   },
   waves: {
     templates: [
-      { id: 'scouts', rows: [Array(8).fill('scout'), Array(8).fill('scout')], spacingPx: { x: 66, y: 56 }, origin: { x: 155, y: 95 }, formationSpeedPxSec: 35, fireIntervalSec: 1.2, diveIntervalSec: 4, maxDivers: 0 },
-      { id: 'interceptors', rows: [Array(8).fill('diver'), Array(8).fill('scout'), Array(8).fill('scout')], spacingPx: { x: 66, y: 52 }, origin: { x: 155, y: 85 }, formationSpeedPxSec: 42, fireIntervalSec: 1, diveIntervalSec: 3.2, maxDivers: 1 },
-      { id: 'heavy', rows: [Array(8).fill('armored'), Array(8).fill('diver'), Array(8).fill('scout')], spacingPx: { x: 66, y: 52 }, origin: { x: 155, y: 85 }, formationSpeedPxSec: 48, fireIntervalSec: 0.9, diveIntervalSec: 2.8, maxDivers: 2 },
+      { id: 'scouts', rows: [Array(8).fill('scout'), Array(8).fill('scout')], spacingPx: { x: 66, y: 56 }, origin: { x: 155, y: 70 }, formationSpeedPxSec: 35, fireIntervalSec: 1.2, diveIntervalSec: 4, maxDivers: 0 },
+      { id: 'interceptors', rows: [Array(8).fill('diver'), Array(8).fill('scout'), Array(8).fill('scout')], spacingPx: { x: 66, y: 52 }, origin: { x: 155, y: 60 }, formationSpeedPxSec: 42, fireIntervalSec: 1, diveIntervalSec: 3.2, maxDivers: 1 },
+      { id: 'heavy', rows: [Array(8).fill('armored'), Array(8).fill('diver'), Array(8).fill('scout')], spacingPx: { x: 66, y: 52 }, origin: { x: 155, y: 60 }, formationSpeedPxSec: 48, fireIntervalSec: 0.9, diveIntervalSec: 2.8, maxDivers: 2 },
     ],
     intermissionSec: 1.2,
     growth: { speedPerWave: 0.08, extraEnemiesPerCycle: 2, fireIntervalFactor: 0.94 },
@@ -39,13 +39,13 @@ export const CONFIG = {
     images: { player: image('player-ship'), scout: image('enemy-scout'), diver: image('enemy-interceptor'), armored: image('enemy-heavy'), playerLaser: image('player-laser'), enemyLaser: image('enemy-laser'), background: image('space-background'),
       ...Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`fire${i}`, image(`fire${String(i).padStart(2, '0')}`)])),
     },
-    sounds: { explosion: { path: 'assets/audio/explosion.ogg', required: false } },
+    sounds: { explosion: { path: 'assets/audio/explosion.ogg', required: false }, playerShot: { path: 'assets/audio/player-shot.ogg', required: false }, enemyShot: { path: 'assets/audio/enemy-shot.ogg', required: false } },
     music: { title: { path: 'assets/audio/title.ogg', loop: true }, level1: { path: 'assets/audio/level-1.ogg', loop: true } },
   },
   audio: {
     masterVolume: 0.7, musicVolume: 0.35, sfxVolume: 0.6, maxConcurrentEffects: 6,
     fadeSec: 0.25, startMuted: false,
-    events: { enemyDestroyed: 'explosion', playerDestroyed: 'explosion' },
+    events: { enemyDestroyed: 'explosion', playerDestroyed: 'explosion', playerFired: 'playerShot', enemyFired: 'enemyShot' },
     tracksByScreen: { title: 'title', playing: 'level1' },
   },
   tuning: {
@@ -56,7 +56,6 @@ export const CONFIG = {
       'solar': { label: 'Solar', background: '#201710', surface: '#2e2219', text: '#fff3df', muted: '#cfbda5', accent: '#f4c06c', ink: '#201710', border: '#95806b', arena: '#140d08' },
     },
     playerShips: [ { id: 'player', label: 'Blue pilot' }, { id: 'scout', label: 'Scout' }, { id: 'diver', label: 'Interceptor' }, { id: 'armored', label: 'Heavy' } ],
-    enemyShips: [ { id: 'scout', label: 'Scout' }, { id: 'diver', label: 'Interceptor' }, { id: 'armored', label: 'Heavy' }, { id: 'player', label: 'Blue pilot' } ],
     fields: [
       { path: 'player.speedPxSec', label: 'Ship speed', min: 120, max: 700, step: 10, unit: 'px/s' },
       { path: 'player.fireIntervalSec', label: 'Shot interval', min: 0.08, max: 0.5, step: 0.01, unit: 's' },
@@ -66,7 +65,7 @@ export const CONFIG = {
       { path: 'audio.musicVolume', label: 'Music volume', min: 0, max: 1, step: 0.05, unit: '' },
       { path: 'audio.sfxVolume', label: 'Effects volume', min: 0, max: 1, step: 0.05, unit: '' },
     ],
-    text: { title: 'Flight tuning', intro: 'Saved in this browser. Combat pauses while tuning.', close: 'Close tuning', reset: 'Reset defaults', theme: 'Theme', playerShip: 'Your ship', enemyShip: 'Enemy ships', originalEnemy: 'Original fleet', nextWave: 'Difficulty changes apply from the next wave.', storageError: 'Browser storage unavailable. Settings apply for this session.', resetStatus: 'Default settings restored.' },
+    text: { title: 'Flight tuning', intro: 'Saved in this browser. Combat pauses while tuning.', close: 'Close tuning', reset: 'Reset defaults', theme: 'Theme', playerShip: 'Your ship', nextWave: 'Difficulty changes apply from the next wave.', storageError: 'Browser storage unavailable. Settings apply for this session.', resetStatus: 'Default settings restored.' },
   },
   visuals: {
     font: '"Segoe UI", system-ui, sans-serif', maxDpr: 2, backgroundAlpha: 0.25,
@@ -81,7 +80,7 @@ export const CONFIG = {
     subtitle: 'Hold the line. Clear the fleet.', edition: 'A formation shooter',
     loading: 'Preparing your ship…', loadError: 'Ship assets could not load. Check the local server and retry.', retry: 'Retry loading',
     start: 'Launch ship', title: 'Space Attack', titleBody: 'Pilot your ship through an endless enemy fleet. Keep moving, fire upward and survive the next wave.',
-    paused: 'Flight paused', pauseBody: 'Take a breath. Your fleet will wait.', resume: 'Resume flight',
+    paused: 'Flight paused', pauseBody: 'Take a breath. Your fleet will wait.', resume: 'Resume flight', mainMenu: 'Main menu',
     gameOver: 'Ship lost', gameOverBody: 'The fleet got through. Launch again and push a little further.', restart: 'Fly again',
     score: 'Score', health: 'Hull', ships: 'Ships', wave: 'Wave', finalScore: 'Final score', finalWave: 'Wave reached',
     pause: 'Pause', mute: 'Mute', unmute: 'Unmute', tuning: 'Tuning', credits: 'Asset credits',

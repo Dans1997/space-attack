@@ -14,6 +14,12 @@ export function createSession(config, worldFactory) {
     },
     pause() { if (session.screen === 'playing') session.screen = 'paused'; },
     resume() { if (session.screen === 'paused') session.screen = 'playing'; },
+    menu() {
+      if (!['paused', 'gameOver'].includes(session.screen)) return false;
+      session.world = null;
+      session.screen = 'title';
+      return true;
+    },
     finish() { if (session.screen === 'playing' && session.world?.gameOver) session.screen = 'gameOver'; },
   };
 }

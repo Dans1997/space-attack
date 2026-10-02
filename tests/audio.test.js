@@ -144,3 +144,204 @@ test('Web Audio loops the decoded title buffer and volume changes update its gai
     else globalThis.Audio = previousAudio;
   }
 });
+
+test('a user gesture resumes the suspended startup context without restarting its music source', async () => {
+  const sources = [];
+  let resumeCalls = 0;
+  class FakeContext {
+    constructor() { this.destination = {}; this.state = 'suspended'; }
+    resume() {
+      resumeCalls += 1;
+      if (resumeCalls >= 3) this.state = 'running';
+      return Promise.resolve();
+    }
+    close() { this.state = 'closed'; return Promise.resolve(); }
+    decodeAudioData() { return Promise.resolve({ duration: 8 }); }
+    createBufferSource() {
+      const source = { connect() {}, start() { this.started = true; }, stop() {}, disconnect() {} };
+      sources.push(source);
+      return source;
+    }
+    createGain() { return { gain: { value: 1 }, connect() {}, disconnect() {} }; }
+  }
+  const previousContext = globalThis.AudioContext;
+  const previousFetch = globalThis.fetch;
+  const previousAudio = globalThis.Audio;
+  globalThis.AudioContext = FakeContext;
+  globalThis.fetch = async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(4) });
+  delete globalThis.Audio;
+  try {
+    const audio = createAudio(CONFIG);
+    await audio.unlock(); // Root's prepare-time unlock runs before a user gesture.
+    assert.equal(sources.length, 1);
+    assert.equal(audio.isMuted(), false);
+    assert.equal(sources[0].started, true);
+    assert.equal(globalThis.AudioContext && resumeCalls, 2);
+    await audio.unlock(); // The first real gesture retries context.resume().
+    assert.equal(resumeCalls, 3);
+    assert.equal(sources.length, 1, 'resume must not restart the existing track');
+    assert.equal(audio.isMuted(), false);
+    audio.destroy();
+  } finally {
+    if (previousContext === undefined) delete globalThis.AudioContext;
+    else globalThis.AudioContext = previousContext;
+    globalThis.fetch = previousFetch;
+    if (previousAudio === undefined) delete globalThis.Audio;
+    else globalThis.Audio = previousAudio;
+  }
+});
+
+test('pending prepare resume can be completed by a later gesture and starts one source', async () => {
+  const sources = [];
+  const pendingResumes = [];
+  let context;
+  class FakeContext {
+    constructor() { this.destination = {}; this.state = 'suspended'; context = this; }
+    resume() {
+      if (this.state === 'running') return Promise.resolve();
+      return new Promise((resolve) => pendingResumes.push(resolve));
+    }
+    close() { this.state = 'closed'; return Promise.resolve(); }
+    decodeAudioData() { return Promise.resolve({ duration: 9 }); }
+    createBufferSource() {
+      const source = { connect() {}, start() { this.started = true; }, stop() {}, disconnect() {} };
+      sources.push(source);
+      return source;
+    }
+    createGain() { return { gain: { value: 1 }, connect() {}, disconnect() {} }; }
+  }
+  const previousContext = globalThis.AudioContext;
+  const previousFetch = globalThis.fetch;
+  const previousAudio = globalThis.Audio;
+  globalThis.AudioContext = FakeContext;
+  globalThis.fetch = async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(4) });
+  delete globalThis.Audio;
+  try {
+    const audio = createAudio(CONFIG);
+    const prepare = audio.unlock();
+    assert.equal(pendingResumes.length, 1);
+    const gesture = audio.unlock();
+    assert.equal(pendingResumes.length, 2);
+    context.state = 'running';
+    for (const resolve of pendingResumes.splice(0)) resolve();
+    await Promise.all([prepare, gesture]);
+    assert.equal(sources.length, 1);
+    assert.equal(sources[0].started, true);
+    audio.destroy();
+  } finally {
+    if (previousContext === undefined) delete globalThis.AudioContext;
+    else globalThis.AudioContext = previousContext;
+    globalThis.fetch = previousFetch;
+    if (previousAudio === undefined) delete globalThis.Audio;
+    else globalThis.Audio = previousAudio;
+  }
+});
+
+test('screen changes while context resume is pending cannot revive stale title music', async () => {
+  const pendingResumes = [];
+  let context;
+  let sourceCount = 0;
+  class FakeContext {
+    constructor() { this.destination = {}; this.state = 'suspended'; context = this; }
+    resume() { return new Promise((resolve) => pendingResumes.push(resolve)); }
+    close() { this.state = 'closed'; return Promise.resolve(); }
+    decodeAudioData() { return Promise.resolve({ duration: 9 }); }
+    createBufferSource() { sourceCount += 1; return { connect() {}, start() {}, stop() {}, disconnect() {} }; }
+    createGain() { return { gain: { value: 1 }, connect() {}, disconnect() {} }; }
+  }
+  const previousContext = globalThis.AudioContext;
+  const previousFetch = globalThis.fetch;
+  const previousAudio = globalThis.Audio;
+  globalThis.AudioContext = FakeContext;
+  globalThis.fetch = async () => ({ ok: true, arrayBuffer: async () => new ArrayBuffer(4) });
+  delete globalThis.Audio;
+  try {
+    const audio = createAudio(CONFIG);
+    const prepare = audio.unlock();
+    audio.setScreen('paused');
+    context.state = 'running';
+    for (const resolve of pendingResumes.splice(0)) resolve();
+    await prepare;
+    assert.equal(sourceCount, 0);
+    audio.destroy();
+  } finally {
+    if (previousContext === undefined) delete globalThis.AudioContext;
+    else globalThis.AudioContext = previousContext;
+    globalThis.fetch = previousFetch;
+    if (previousAudio === undefined) delete globalThis.Audio;
+    else globalThis.Audio = previousAudio;
+  }
+});
+
+test('autoplay blocking remains retryable and does not report permanent audio failure', async () => {
+  let attempts = 0;
+  class GestureAudio {
+    constructor() { this.paused = true; }
+    play() {
+      attempts += 1;
+      if (attempts === 1) return Promise.reject(Object.assign(new Error('gesture required'), { name: 'NotAllowedError' }));
+      this.paused = false;
+      return Promise.resolve();
+    }
+    pause() { this.paused = true; }
+  }
+  const previousAudio = globalThis.Audio;
+  const previousContext = globalThis.AudioContext;
+  const previousWebkit = globalThis.webkitAudioContext;
+  const messages = [];
+  globalThis.Audio = GestureAudio;
+  delete globalThis.AudioContext;
+  delete globalThis.webkitAudioContext;
+  try {
+    const audio = createAudio(CONFIG, (message) => messages.push(message));
+    await audio.unlock();
+    assert.deepEqual(messages, []);
+    await audio.unlock();
+    assert.equal(attempts, 2);
+    assert.deepEqual(messages, []);
+    audio.destroy();
+  } finally {
+    if (previousAudio === undefined) delete globalThis.Audio;
+    else globalThis.Audio = previousAudio;
+    if (previousContext === undefined) delete globalThis.AudioContext;
+    else globalThis.AudioContext = previousContext;
+    if (previousWebkit === undefined) delete globalThis.webkitAudioContext;
+    else globalThis.webkitAudioContext = previousWebkit;
+  }
+});
+
+test('shot events play their configured assets at the effects volume and mute blocks them', async () => {
+  const instances = [];
+  class FakeAudio {
+    constructor(src) { this.src = src; this.paused = true; instances.push(this); }
+    play() { this.paused = false; return Promise.resolve(); }
+    pause() { this.paused = true; }
+    addEventListener() {}
+  }
+  const previousAudio = globalThis.Audio;
+  const previousContext = globalThis.AudioContext;
+  const previousWebkit = globalThis.webkitAudioContext;
+  globalThis.Audio = FakeAudio;
+  delete globalThis.AudioContext;
+  delete globalThis.webkitAudioContext;
+  try {
+    const audio = createAudio(CONFIG);
+    await audio.unlock();
+    audio.handleEvents(['playerFired', 'enemyFired']);
+    const shots = instances.filter((instance) => instance.src === CONFIG.assets.sounds.playerShot.path || instance.src === CONFIG.assets.sounds.enemyShot.path);
+    assert.deepEqual(shots.map((instance) => instance.src), [CONFIG.assets.sounds.playerShot.path, CONFIG.assets.sounds.enemyShot.path]);
+    assert.ok(shots.every((instance) => instance.volume === CONFIG.audio.masterVolume * CONFIG.audio.sfxVolume));
+    audio.setMuted(true);
+    const countAfterMute = instances.length;
+    audio.handleEvents(['playerFired', 'enemyFired']);
+    assert.equal(instances.length, countAfterMute);
+    audio.destroy();
+  } finally {
+    if (previousAudio === undefined) delete globalThis.Audio;
+    else globalThis.Audio = previousAudio;
+    if (previousContext === undefined) delete globalThis.AudioContext;
+    else globalThis.AudioContext = previousContext;
+    if (previousWebkit === undefined) delete globalThis.webkitAudioContext;
+    else globalThis.webkitAudioContext = previousWebkit;
+  }
+});

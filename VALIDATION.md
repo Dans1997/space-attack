@@ -4,11 +4,11 @@ Checked on 2026-10-02 in `F:\Repos\space-attack`, branch `feature/space-attack`.
 
 ## Automated checks
 
-`npm test`: **34 passed, 0 failed, 0 skipped**. Re-run before each implementation commit.
+`npm test`: **42 passed, 0 failed, 0 skipped**. Re-run before each implementation commit.
 
-Coverage: deterministic initialization; movement/held firing; swept nearest hit and single scoring; bullet health/respawn; immediate full-hull/invulnerable contact loss; enemies lingering at the floor; bounded rows/high waves; monotonic capped difficulty; intermission timing; ten fresh-run resets; fixed-loop catch-up/pause; form keyboard isolation; config/asset references; localStorage validation/reset; media unlock/fallback; stale music promises; decoded-buffer looping/gain.
+Coverage: deterministic initialization; movement/held firing; swept nearest hit and single scoring; bullet health/respawn; immediate full-hull/invulnerable contact loss; formation ships stopping at the floor; missed divers exiting harmlessly; interceptor-only dives; bounded rows/high waves; monotonic capped difficulty; intermission timing; ten fresh-run resets; fixed-loop catch-up/pause; form keyboard isolation; config/asset references; localStorage validation/reset; media unlock/fallback; stale music promises; decoded-buffer looping/gain.
 
-All **31 assets total 1,374,935 bytes**, unchanged from the approved baseline. All 27 PNGs and 3 OGGs appear in the runtime manifest; the remaining file is the Kenney license. CREDITS.md inventories all files. Archives remain outside the repository.
+All **33 assets total 1,384,944 bytes**. All 27 PNGs and 5 OGGs appear in the runtime manifest; the remaining file is the Kenney license. CREDITS.md inventories all files. Archives remain outside the repository.
 
 FFmpeg inspected Title: duration **11.294127 seconds**, source metadata `Loop Ready, Free to Use Anywhere`, no silence interval with `silencedetect=noise=-40dB:d=0.04`. Music now loops an AudioBufferSourceNode over the decoded buffer, avoiding HTML media restart latency. Asset bytes were not changed. Tests verify continuous looping and source lifecycle; browser playback emitted no audio error. Subjective listening quality is for review, not an automated assertion.
 
@@ -20,7 +20,7 @@ Ran `http://127.0.0.1:4173` in Codex's in-app Chromium browser:
 
 - Title/Launch, keyboard movement/Space shot, HUD, kill score 000100, damage/respawn, P pause/resume, M mute/unmute.
 - T native tuning pauses combat; Escape/Close restore focus and leave combat paused for manual resume.
-- Speed 500, Phosphor, player Interceptor and enemy Heavy survived reload. Solar and volume controls also worked. Reset restored defaults.
+- Baseline: Speed 500, Phosphor, player Interceptor and enemy Heavy survived reload. Latest playtest removed the enemy picker and ignores old saved enemy overrides. Solar and volume controls also worked. Reset restored defaults.
 - Opening-fleet speed 180 exercised live game over with enemies still on screen at the last row. Fly again restored score 0, wave 1, hull 100%, ships 3 and a fresh formation. Restored defaults afterward.
 - Desktop and 390 x 844 viewport: screenshots, no horizontal overflow (`scrollWidth = clientWidth = 390`), legible controls/focus. Native tuning scrolls within viewport and opens at theme/heading. Viewport override reset.
 - Browser error logs empty after integrated checks.
@@ -85,3 +85,12 @@ Primary-agent source review, DESIGN.md, browser interactions/screenshots above, 
 ## Baseline history
 
 Approved baseline external NPM harness: four passing tests before `38c0a26`. Watch download returned HTTP 403, no frames/captions; Codex inspected browser samples documented in PLAN.md. No other AI service was used.
+
+## Latest playtest corrections
+
+- Main menu from both pause and Ship lost was exercised in the browser; returning clears the run and restores the title/HUD defaults. Session tests also cover fresh launches after both paths.
+- Enemy origins are 25 px higher. Only interceptors can dive, keep their spawned sprite/orientation and leave below the arena harmlessly. Formation floor clamp and actual ship-contact loss remain. Focused simulation tests pass.
+- Player/enemy firing emits distinct events mapped to credited short OGG shots. FFprobe decoded their durations (0.116100 s / 0.185737 s); the local server returned HTTP 200 for both. Browser shooting after integration produced no audio-unavailable notice. Audible balance remains a listening review.
+- Music attempts startup by default; suspended context resume and blocked HTML autoplay are retryable on a user gesture. Mute/unmute were each saved and verified across browser reloads. The default remains unmuted.
+- Browser tuning contains theme, numeric values and Your ship, with no enemy picker. No new dependencies.
+- Interim integration test run: 33 passed / 4 failed (missing player-shot.ogg plus three obsolete enemy-picker settings assertions). Shot files initially landed in the review output folder; they were copied into the actual repository and obsolete assertions updated. Subsequent full suite passed.

@@ -60,7 +60,10 @@ function act(action) {
     if (session.screen === 'playing') pause();
     else if (session.screen === 'paused') confirm();
   }
-  if (action === 'mute') { audio.setMuted(!audio.isMuted()); refresh(); }
+  if (action === 'mute') {
+    settings.update('audio.muted', !audio.isMuted());
+    audio.setMuted(config().audio.startMuted); refresh();
+  }
   if (action === 'tuning') tuning.toggle();
 }
 
@@ -80,6 +83,9 @@ const loop = createLoop({
 });
 
 document.getElementById('screen-action').addEventListener('click', confirm);
+document.getElementById('menu-button').addEventListener('click', () => {
+  if (session.menu()) { effects.clear(); input.clear(); loop.resetTime(); refresh(); }
+});
 document.getElementById('pause-button').addEventListener('click', () => act('pause'));
 document.getElementById('mute-button').addEventListener('click', () => act('mute'));
 document.getElementById('tuning-button').addEventListener('click', () => act('tuning'));
@@ -101,6 +107,7 @@ async function prepare() {
     const assets = await loadAssets(config());
     renderer = createRenderer(canvas, assets, config, effects);
     session.ready(); refresh(); loop.start();
+    void audio.unlock();
     if (settings.persistError) ui.notice(config().tuning.text.storageError);
   } catch (error) { session.fail(error); refresh(); }
   finally { preparing = false; }

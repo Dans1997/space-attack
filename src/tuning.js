@@ -19,7 +19,6 @@ export function createTuningPanel({ settings, onChange = () => {}, onOpen = () =
   const resetButton = element('button', { type: 'button', class: 'tuning-reset' }, copy.reset);
   const closeButton = element('button', { type: 'submit', class: 'tuning-close' }, copy.close);
   const fieldInputs = new Map();
-  const shipControls = new Map();
   let returnFocus = null;
 
   function tellParent() {
@@ -33,35 +32,34 @@ export function createTuningPanel({ settings, onChange = () => {}, onOpen = () =
     return element('img', { src: `/${definition.path}`, alt, class: 'tuning-preview' });
   }
 
-  function addShipPicker({ id, label, ships, path, current, includeOriginal = false }) {
+  function addShipPicker({ id, label, ships, path, current }) {
     const group = element('div', { class: 'tuning-ship-control' });
     const labelNode = element('label', { for: id }, label);
     const select = element('select', { id, name: id });
-    const options = includeOriginal ? [{ id: 'original', label: copy.originalEnemy }, ...ships] : ships;
-    for (const ship of options) {
+    for (const ship of ships) {
       const option = element('option', { value: ship.id }, ship.label);
       option.selected = ship.id === current;
       select.append(option);
     }
-    let preview = previewFor(current === 'original' ? 'scout' : current, `${label} preview`);
+    let preview = previewFor(current, `${label} preview`);
     select.addEventListener('change', () => {
       settings.update(path, select.value);
       const selected = select.value;
-      const sprite = previewFor(selected === 'original' ? 'scout' : selected, `${label} preview`);
+      const sprite = previewFor(selected, `${label} preview`);
       if (sprite) {
         preview?.replaceWith(sprite);
         preview = sprite;
       }
       tellParent();
     });
-    shipControls.set(path, { select, setPreview(id) {
-      select.value = id;
-      const sprite = previewFor(id === 'original' ? 'scout' : id, `${label} preview`);
-      if (sprite) { preview?.replaceWith(sprite); preview = sprite; }
-    } });
     group.append(labelNode, select);
     if (preview) group.append(preview);
     form.append(group);
+    return (value) => {
+      select.value = value;
+      const sprite = previewFor(value, `${label} preview`);
+      if (sprite) { preview?.replaceWith(sprite); preview = sprite; }
+    };
   }
 
   function addField(field, index) {
@@ -101,8 +99,7 @@ export function createTuningPanel({ settings, onChange = () => {}, onOpen = () =
   themeSelect.value = settings.values.theme;
   form.append(themeGroup);
   tuning.fields.forEach(addField);
-  addShipPicker({ id: 'tuning-player-ship', label: copy.playerShip, ships: tuning.playerShips, path: 'tuning.playerShip', current: settings.values.playerShipId });
-  addShipPicker({ id: 'tuning-enemy-ship', label: copy.enemyShip, ships: tuning.enemyShips, path: 'tuning.enemyShip', current: settings.values.enemyShipId, includeOriginal: true });
+  const setPlayerShip = addShipPicker({ id: 'tuning-player-ship', label: copy.playerShip, ships: tuning.playerShips, path: 'tuning.playerShip', current: settings.values.playerShipId });
   actions.append(resetButton, closeButton);
   form.append(status, actions);
   dialog.append(heading, intro, progressionNote, form);
@@ -133,8 +130,7 @@ export function createTuningPanel({ settings, onChange = () => {}, onOpen = () =
     settings.reset();
     themeSelect.value = settings.values.theme;
     for (const [path, input] of fieldInputs) input.value = String(settings.values.fields[path]);
-    shipControls.get('tuning.playerShip')?.setPreview(settings.values.playerShipId);
-    shipControls.get('tuning.enemyShip')?.setPreview(settings.values.enemyShipId);
+    setPlayerShip(settings.values.playerShipId);
     onChange(settings.config, settings.values);
     status.textContent = settings.persistError ? copy.storageError : copy.resetStatus;
   }

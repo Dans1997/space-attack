@@ -135,10 +135,14 @@ export function createAudio(config, onStatus = () => {}) {
       }
     } catch (error) {
       if (track !== candidate || trackGeneration !== generation || destroyed || muted) return;
-      if (error?.name === 'AbortError') return;
+      const retryable = error?.name === 'AbortError' || error?.name === 'NotAllowedError';
+      if (error?.name === 'AbortError') {
+        stopTrack();
+        return;
+      }
       if (candidate.source || candidate.gain || candidate.audio) {
         stopTrack();
-        reportUnavailable();
+        if (!retryable) reportUnavailable();
         return;
       }
       try {
@@ -146,7 +150,7 @@ export function createAudio(config, onStatus = () => {}) {
       } catch (fallbackError) {
         if (track === candidate && trackGeneration === generation) {
           stopTrack();
-          if (fallbackError?.name !== 'AbortError') reportUnavailable();
+          if (fallbackError?.name !== 'AbortError' && fallbackError?.name !== 'NotAllowedError') reportUnavailable();
         }
       }
     }
@@ -155,6 +159,10 @@ export function createAudio(config, onStatus = () => {}) {
   async function unlock() {
     if (destroyed) return;
     unlocked = true;
+    const context = getAudioContext();
+    if (context && context.state !== 'running') {
+      try { await context.resume(); } catch { /* A later user gesture can retry a suspended context. */ }
+    }
     await playTrackForScreen();
   }
 
@@ -204,11 +212,18 @@ export function createAudio(config, onStatus = () => {}) {
 
   function updateConfig(nextConfig) {
     const priorPath = trackPath();
+    const priorMuted = muted;
     currentConfig = nextConfig;
+    muted = Boolean(nextConfig.audio.startMuted);
     syncVolumes();
     const nextId = currentConfig.audio.tracksByScreen[screen];
     const nextPath = nextId && currentConfig.assets.music[nextId]?.path;
-    if (priorPath && priorPath !== nextPath) void playTrackForScreen();
+    if (muted !== priorMuted && muted) {
+      stopTrack();
+      stopEffects();
+    } else if ((priorPath && priorPath !== nextPath) || muted !== priorMuted) {
+      void playTrackForScreen();
+    }
   }
 
   function destroy() {

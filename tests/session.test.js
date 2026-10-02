@@ -28,3 +28,23 @@ test('loading failures can retry to title', () => {
   session.fail(new Error('missing sprite')); assert.equal(session.screen, 'error');
   assert.equal(session.start(), false); session.ready(); assert.equal(session.loadError, null);
 });
+
+test('pause and loss can return to menu and launch a fresh run', () => {
+  for (const screen of ['paused', 'gameOver']) {
+    const session = createSession(() => CONFIG, createWorld);
+    session.ready();
+    assert.equal(session.menu(), false);
+    session.start();
+    const first = session.world;
+    first.score = 1000;
+    if (screen === 'paused') session.pause();
+    else { first.gameOver = true; session.finish(); }
+    assert.equal(session.menu(), true);
+    assert.equal(session.screen, 'title');
+    assert.equal(session.world, null);
+    session.start();
+    assert.notEqual(session.world, first);
+    assert.equal(session.world.score, 0);
+    assert.equal(session.world.waveIndex, 1);
+  }
+});
